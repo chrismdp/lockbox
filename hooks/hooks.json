@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/lockbox.py",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/dist/hook-pre-tool-use.js",
             "timeout": 5
           }
         ]
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/lockbox-clear.py",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/dist/hook-session-end.js",
             "timeout": 5
           }
         ]

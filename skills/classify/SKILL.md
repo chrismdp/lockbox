@@ -17,7 +17,7 @@ Lockbox uses three configuration layers, merged in order (later layers override 
 
 | Layer | File | Purpose |
 |-------|------|---------|
-| Plugin defaults | `${CLAUDE_PLUGIN_ROOT}/scripts/lockbox-classify.json` | Ships with plugin — **never edit** |
+| Plugin defaults | `${CLAUDE_PLUGIN_ROOT}/scripts/lockbox-defaults.json` | Ships with plugin — **never edit** |
 | User overrides | `~/.claude/lockbox.json` | Personal tools across all projects |
 | Project overrides | `.claude/lockbox.json` | Project-specific tools, committable |
 
@@ -84,4 +84,4 @@ This removes the exact string `^(rm|mv|cp|mkdir)\s` from the safe list.
 - Anchor with `^` only when the command must be at the start of a segment
 - Pipe chains are split on `|`, `&`, `;` — each segment is classified independently
 - A pipe that combines unsafe + acting segments gets `unsafe_acting`
-- Patterns use Python `re.search()` — no need to match the full string
+- Patterns use JS `new RegExp(pattern).test(string)` — no need to match the full string
