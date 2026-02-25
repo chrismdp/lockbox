@@ -59,6 +59,10 @@ When your session reads external content (a web page, an API, an email), Lockbox
 
 In practice this means you move to plan mode more often for tasks that mix external reads with external actions. Claude will suggest this when it gets blocked. You get **fewer interruptions**, not more, because you stop getting permission prompts for every WebFetch and curl.
 
+<img src="lockbox-in-action.png" alt="Lockbox blocking an acting tool in a locked session and prompting the agent to enter plan mode" />
+
+*Lockbox catches a gmail batch modify command after untrusted data entered the session. The agent acknowledges the block and moves to plan mode.*
+
 ### When Lockbox presents a plan
 
 When Lockbox blocks an action, Claude enters plan mode and writes a plan for the blocked actions. When it exits plan mode, you will see two options:
