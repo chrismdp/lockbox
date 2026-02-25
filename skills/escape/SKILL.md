@@ -1,13 +1,13 @@
 ---
-name: plan
-description: Guides plan creation when a session is in lockbox quarantine
+name: escape
+description: Guides escape from a locked lockbox session via plan mode
 triggers:
   - lockbox has blocked a tool
   - session is locked and agent needs to write a plan
   - agent enters plan mode after a lockbox block
 ---
 
-# Lockbox Plan Writing
+# Lockbox Escape
 
 When your session is locked by lockbox (external actions blocked due to untrusted data in context), use Claude Code's built-in plan mode to describe the actions you need taken.
 
