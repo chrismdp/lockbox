@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "lockbox-local",
+  "description": "Local marketplace for the Lockbox taint-aware quarantine plugin",
+  "owner": {
+    "name": "Chris Parsons",
+    "url": "https://chrismdp.com"
+  },
+  "plugins": [
+    {
+      "name": "lockbox",
+      "description": "Taint-aware context quarantine — blocks external actions when untrusted data enters the session",
+      "version": "0.1.0",
+      "category": "security",
+      "source": "./"
+    }
+  ]
+}
