@@ -3,13 +3,13 @@
     "safe": [
       "Glob", "Grep", "Read", "Write", "Edit", "NotebookEdit",
       "WebSearch", "ToolSearch", "Skill",
-      "TaskOutput", "TaskCreate", "TaskGet", "TaskUpdate", "TaskList",
+      "Task", "TaskOutput", "TaskCreate", "TaskGet", "TaskUpdate", "TaskList",
       "TodoWrite",
       "EnterPlanMode", "ExitPlanMode",
       "AskUserQuestion", "EnterWorktree"
     ],
     "acting": [
-      "Task", "TaskStop",
+      "TaskStop",
       "TeamCreate", "TeamDelete", "SendMessage"
     ],
     "unsafe": [],
@@ -28,32 +28,37 @@
   },
   "mcp_default": "acting",
   "bash_patterns": {
-    "unsafe": [
-      "gog\\s+gmail\\s+(read|search|get|list)",
+    "override_safe": [
+      "--help"
+    ],
+    "unsafe_acting": [
       "curl\\s",
       "wget\\s"
     ],
+    "unsafe": [],
     "acting": [
-      "gog\\s+gmail\\s+(send|drafts?\\s+create|delete|trash)",
-      "gog\\s+calendar\\s+(create|update|delete)",
-      "gog\\s+drive\\s+(upload|create|delete|move)",
-      "gog\\s+sheets\\s+(update|append|clear|create)",
-      "reclaim\\s+(create|update|delete|complete|start)",
       "git\\s+(push|reset|rebase)",
       "op\\s",
       "npm\\s+publish",
-      "sudo\\s"
+      "sudo\\s",
+      "ssh\\s",
+      "scp\\s",
+      "nc\\s",
+      "netcat\\s",
+      "ncat\\s"
     ],
     "safe": [
       "^(date|ls|cat|head|tail|wc|find|grep|rg)(\\s|$)",
-      "ck\\s",
-      "gog\\s+calendar\\s+(events|get|list)",
-      "gog\\s+drive\\s+(list|get|download)",
-      "gog\\s+sheets\\s+get",
-      "git\\s+(status|log|diff|show|branch|add|commit)",
-      "reclaim\\s+(list|search|get)",
-      "python\\s+scripts/",
-      "^(rm|mv|cp|mkdir)\\s"
+      "^(echo|printf|tee|touch|sort|uniq|tr|cut|xargs)(\\s|$)",
+      "^(jq|yq|sed|awk|diff|comm|paste)(\\s|$)",
+      "^(python3?|node|ruby|perl)(\\s|$)",
+      "^(timeout|time|env|which|type|file|stat|readlink)(\\s|$)",
+      "^(basename|dirname|realpath|mktemp)(\\s|$)",
+      "^(tar|zip|unzip|gzip|gunzip)(\\s|$)",
+      "^(sha256sum|md5sum|base64|xxd)(\\s|$)",
+      "git\\s+(status|log|diff|show|branch|add|commit|stash|fetch|tag|remote)",
+      "^(rm|mv|cp|mkdir)\\s",
+      "^claude\\s"
     ]
   }
 }

@@ -1,0 +1,17 @@
+{
+  "_comment": "Copy to ~/.claude/lockbox.json (user-wide) or .claude/lockbox.json (project-level)",
+  "bash_patterns": {
+    "safe": [
+      "mytool\\s+(list|get|status)"
+    ],
+    "acting": [
+      "mytool\\s+(deploy|rollback|send)"
+    ],
+    "unsafe": [
+      "mytool\\s+(fetch|download)"
+    ]
+  },
+  "mcp_tools": {
+    "mcp__slack__post_message": "acting"
+  }
+}

@@ -11,12 +11,12 @@
         ]
       }
     ],
-    "Stop": [
+    "SessionEnd": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/lockbox-stop.py",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/lockbox-clear.py",
             "timeout": 5
           }
         ]

@@ -13,6 +13,7 @@ Categories:
 """
 
 import json
+import os
 import re
 import sys
 from datetime import datetime, timezone
@@ -43,9 +44,44 @@ def save_state(session_id: str, state: dict):
     path.write_text(json.dumps(state, indent=2))
 
 
+def merge_lists(base: list, overlay: list) -> list:
+    removals = {item[1:] for item in overlay if item.startswith("!")}
+    additions = [item for item in overlay if not item.startswith("!")]
+    filtered = [item for item in base if item not in removals]
+    return additions + filtered
+
+
+def merge_configs(base: dict, overlay: dict) -> dict:
+    result = {}
+    for key in ("mcp_default",):
+        result[key] = overlay.get(key, base.get(key))
+    for key in ("mcp_tools",):
+        merged = dict(base.get(key, {}))
+        merged.update(overlay.get(key, {}))
+        result[key] = merged
+    for key in ("tools", "bash_patterns"):
+        bg = base.get(key, {})
+        og = overlay.get(key, {})
+        mg = {}
+        for k in set(list(bg.keys()) + list(og.keys())):
+            mg[k] = merge_lists(bg.get(k, []), og.get(k, []))
+        result[key] = mg
+    return result
+
+
 def load_config() -> dict:
-    config_path = Path(__file__).parent / "lockbox-classify.json"
-    return json.loads(config_path.read_text())
+    plugin_root = Path(os.environ.get("CLAUDE_PLUGIN_ROOT", Path(__file__).parent.parent))
+    config = json.loads((plugin_root / "scripts" / "lockbox-classify.json").read_text())
+    for override_path in (
+        Path.home() / ".claude" / "lockbox.json",
+        Path.cwd() / ".claude" / "lockbox.json",
+    ):
+        if override_path.exists():
+            try:
+                config = merge_configs(config, json.loads(override_path.read_text()))
+            except (json.JSONDecodeError, OSError):
+                pass
+    return config
 
 
 def classify_tool(tool_name: str, tool_input: dict, config: dict) -> str:
@@ -109,7 +145,13 @@ def classify_bash(command: str, patterns: dict) -> str:
 
 
 def classify_bash_segment(segment: str, patterns: dict) -> str:
-    """First-match-wins across unsafe → acting → safe. Default: acting."""
+    """Override-safe first, then unsafe_acting → unsafe → acting → safe. Default: acting."""
+    for p in patterns.get("override_safe", []):
+        if re.search(p, segment):
+            return "safe"
+    for p in patterns.get("unsafe_acting", []):
+        if re.search(p, segment):
+            return "unsafe_acting"
     for p in patterns.get("unsafe", []):
         if re.search(p, segment):
             return "unsafe"
@@ -146,16 +188,18 @@ def block_tool(state: dict, tool_name: str, tool_input: dict, session_id: str):
         save_state(session_id, state)
 
     reason = (
-        "LOCKBOX: External action blocked — your context contains untrusted data.\n"
+        "LOCKBOX: Action blocked — session contains untrusted data.\n"
         "\n"
-        f"Locked at {state['locked_at']} by: {state['locked_by']}\n"
+        f"Tainted by: {state['locked_by']} at {state['locked_at']}\n"
+        f"Blocked: {tool_description(tool_name, tool_input)}\n"
         "\n"
-        "You CAN: read/write/edit local files, search, enter plan mode.\n"
-        "You CANNOT: send emails, push to git, create external tasks, fetch URLs.\n"
+        "Continue working — read, write, edit, search, and Bash all work.\n"
         "\n"
-        "Enter plan mode (EnterPlanMode) and describe the external actions you need.\n"
-        "Write your plan to the plan file. The user will review it and can run\n"
-        "/lockbox-execute in a clean session to carry out approved actions."
+        "When ready to take external actions:\n"
+        "1. Enter plan mode (EnterPlanMode)\n"
+        "2. Write plan with ALL concrete data inline (exact email bodies, etc.)\n"
+        "3. Order phases: safe first, then acting, then unsafe\n"
+        "4. Exit plan mode — user selects 'Clear context and bypass permissions'"
     )
     print(json.dumps({"decision": "block", "reason": reason}))
 
