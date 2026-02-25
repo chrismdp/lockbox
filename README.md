@@ -14,7 +14,7 @@ Simon Willison calls the combination of **private data**, **untrusted content**,
 
 ## What Lockbox does
 
-Lockbox automatically detects when untrusted data enters your Claude Code session and blocks external actions until you review a plan in a clean context.
+Lockbox detects when untrusted data enters your Claude Code session and blocks external actions until you review a plan in a clean context.
 
 1. **You read something external** (WebFetch, curl, Perplexity) and Lockbox locks your session
 2. **You keep working normally** because file reads, writes, edits, searches, and local Bash all still work
@@ -23,7 +23,7 @@ Lockbox automatically detects when untrusted data enters your Claude Code sessio
 5. **You clear context** so Claude Code starts fresh from your plan, with no untrusted data in the conversation
 6. **The clean agent executes your plan** and external actions proceed safely
 
-The harness detects the lock, not the agent. This matters because by the time untrusted data enters the conversation, the agent may already be compromised. Lockbox does not ask the agent whether it has been influenced. It tracks what the agent has been exposed to and restricts what it can do next.
+The harness detects the lock, not the agent. By the time untrusted data enters the conversation, the agent may already be compromised. Lockbox tracks what the agent has been exposed to and restricts what it can do next.
 
 ## Install
 
@@ -49,26 +49,26 @@ Open `~/.claude/settings.json` and add `WebFetch` to your global allow list:
 }
 ```
 
-Without Lockbox, allowing unrestricted WebFetch is risky — a compromised agent could fetch attacker-controlled content and then act on it. With Lockbox, the fetch locks the session and all external actions are blocked until you clear context through plan mode. The damage path is cut, so the fetch is safe.
+Without Lockbox, allowing unrestricted WebFetch is risky. A compromised agent could fetch attacker-controlled content and then act on it. With Lockbox, the fetch locks the session and all external actions are blocked until you clear context through plan mode. The damage path is cut, so the fetch is safe.
 
 ## Usage
 
-Just use Claude Code the way you normally would. Lockbox stays out of the way until it matters. You will not notice it on sessions that only do local work.
+Just use Claude Code the way you normally would. Lockbox stays out of the way until it matters, and you will not notice it on sessions that only do local work.
 
-When your session reads external content (a web page, an API, an email), Lockbox locks the session silently. Everything local keeps working — reads, writes, edits, search, Bash. The only difference is that external actions like git push or sending messages are blocked until you clear context.
+When your session reads external content (a web page, an API, an email), Lockbox locks the session silently. Everything local keeps working: reads, writes, edits, search, Bash. The only difference is that external actions like git push or sending messages are blocked until you clear context.
 
-In practice this means you move to plan mode more often for tasks that mix external reads with external actions. Claude will suggest this when it gets blocked. The overall experience is **fewer interruptions**, not more — you stop getting permission prompts for every WebFetch and curl because Lockbox handles the risk structurally.
+In practice this means you move to plan mode more often for tasks that mix external reads with external actions. Claude will suggest this when it gets blocked. You get **fewer interruptions**, not more, because you stop getting permission prompts for every WebFetch and curl.
 
 ### When Lockbox presents a plan
 
-When Lockbox blocks an action, Claude will automatically enter plan mode and write a plan for the blocked actions. When it exits plan mode, you will see two options:
+When Lockbox blocks an action, Claude enters plan mode and writes a plan for the blocked actions. When it exits plan mode, you will see two options:
 
 ```
 ❯ 1. Yes, clear context (21% used) and bypass permissions   ← PICK THIS ONE
   2. Yes, and bypass permissions
 ```
 
-**Always pick option 1** ("clear context"). Option 2 keeps the locked conversation in context, which defeats the entire purpose — the untrusted data stays in the session and the agent can still act on it. Option 1 starts a fresh agent that executes the plan with no untrusted data in the conversation.
+**Always pick option 1** ("clear context"). Option 2 keeps the locked conversation in context, so the untrusted data stays in the session and the agent can still act on it. Option 1 starts a fresh agent that executes the plan with no untrusted data in the conversation.
 
 ## How it works
 
@@ -162,7 +162,7 @@ Lockbox is early and actively developed. Every team has different tools and ever
 
 Fetching documentation (MDN, Node.js docs) locks the session even though these sites have no user-generated content and near-zero prompt injection risk. A `trusted_domains` config key could skip locking for known-safe origins.
 
-The challenge is that Claude Code already has its own domain allowlists for WebFetch permissions, but those reflect "don't prompt me" not "this content is safe". A user might have `reddit.com` allowed for convenience while reddit comments are full of injection risk. Lockbox cannot inherit from Claude Code's permission system because the two concepts are different — one is about user convenience, the other is about content safety. Any trusted domains list would need to be Lockbox-specific and empty by default.
+The challenge is that Claude Code already has its own domain allowlists for WebFetch permissions, but those reflect "don't prompt me" not "this content is safe". A user might have `reddit.com` allowed for convenience while reddit comments are full of injection risk. Lockbox cannot inherit from Claude Code's permission system because the two concepts are different. One is about user convenience, the other is about content safety. Any trusted domains list would need to be Lockbox-specific and empty by default.
 
 ## Background
 
