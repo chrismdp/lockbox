@@ -26,10 +26,10 @@ Lockbox uses three configuration layers, merged in order (later layers override 
 ## Categories
 
 - **override_safe** — checked first, always safe regardless of other matches (e.g. `--help`)
-- **safe** — always allowed, even in tainted sessions
-- **acting** — blocked when session is tainted (sends data externally)
-- **unsafe** — taints the session but the command is allowed (reads external data)
-- **unsafe_acting** — taints on first use, blocked if already tainted (both reads and sends)
+- **safe** — always allowed, even in locked sessions
+- **acting** — blocked when session is locked (sends data externally)
+- **unsafe** — locks the session but the command is allowed (reads external data)
+- **unsafe_acting** — locks on first use, blocked if already locked (both reads and sends)
 
 Check order: `override_safe` → `unsafe_acting` → `unsafe` → `acting` → `safe` → default **acting**.
 

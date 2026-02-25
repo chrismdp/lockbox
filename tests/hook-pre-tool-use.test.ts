@@ -48,7 +48,7 @@ describe("hook-pre-tool-use", () => {
     expect(stdoutData).toBe("");
   });
 
-  it("unsafe tool taints session but passes through", () => {
+  it("unsafe tool locks session but passes through", () => {
     main(hookInput("mcp__perplexity__perplexity_ask", {}, "taint-test"), tmpDir);
     expect(stdoutData).toBe("");
     const state = loadState("taint-test", tmpDir);
@@ -61,8 +61,8 @@ describe("hook-pre-tool-use", () => {
     expect(stdoutData).toBe("");
   });
 
-  it("acting tool is blocked when session is tainted", () => {
-    // Taint the session first
+  it("acting tool is blocked when session is locked", () => {
+    // Lock the session first
     saveState("blocked-test", {
       locked: true,
       locked_by: "WebFetch",
@@ -77,14 +77,14 @@ describe("hook-pre-tool-use", () => {
     expect(output.reason).toContain("TaskStop");
   });
 
-  it("unsafe_acting tool is allowed on first use and taints", () => {
+  it("unsafe_acting tool is allowed on first use and locks", () => {
     main(hookInput("WebFetch", { url: "https://example.com" }, "ua-test"), tmpDir);
     expect(stdoutData).toBe(""); // allowed
     const state = loadState("ua-test", tmpDir);
     expect(state.locked).toBe(true);
   });
 
-  it("unsafe_acting tool is blocked when already tainted", () => {
+  it("unsafe_acting tool is blocked when already locked", () => {
     saveState("ua-blocked", {
       locked: true,
       locked_by: "WebFetch",
@@ -102,7 +102,7 @@ describe("hook-pre-tool-use", () => {
     expect(stdoutData).toBe("");
   });
 
-  it("block message includes taint source and blocked tool", () => {
+  it("block message includes lock source and blocked tool", () => {
     saveState("msg-test", {
       locked: true,
       locked_by: "Bash: curl https://evil.com",

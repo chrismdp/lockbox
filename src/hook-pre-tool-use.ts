@@ -4,7 +4,7 @@ import { loadState, saveState } from "./state.js";
 import { loadConfig } from "./config.js";
 import { classifyTool, toolDescription } from "./classify.js";
 
-function taintSession(
+function lockSession(
   state: LockboxState,
   toolName: string,
   toolInput: Record<string, unknown>,
@@ -34,7 +34,7 @@ function blockTool(
   const reason =
     "LOCKBOX: Action blocked — session contains untrusted data.\n" +
     "\n" +
-    `Tainted by: ${state.locked_by} at ${state.locked_at}\n` +
+    `Locked by: ${state.locked_by} at ${state.locked_at}\n` +
     `Blocked: ${desc}\n` +
     "\n" +
     "Continue working — read, write, edit, search, and Bash all work.\n" +
@@ -70,30 +70,30 @@ export function main(stdinData?: string, tmpDir?: string): void {
   // Safe: always passthrough
   if (category === "safe") return;
 
-  // Unsafe (read-only taint): taint the session, allow the read
+  // Unsafe (read-only lock): lock the session, allow the read
   if (category === "unsafe") {
     if (!isLocked) {
-      taintSession(state, toolName, toolInput, sessionId, tmpDir);
+      lockSession(state, toolName, toolInput, sessionId, tmpDir);
     }
     return;
   }
 
-  // Unsafe+Acting: taint on first use, block if already tainted
+  // Unsafe+Acting: lock on first use, block if already locked
   if (category === "unsafe_acting") {
     if (!isLocked) {
-      taintSession(state, toolName, toolInput, sessionId, tmpDir);
+      lockSession(state, toolName, toolInput, sessionId, tmpDir);
       return; // allow the first use
     }
     // Already locked → fall through to block
   }
 
-  // Acting (or unsafe_acting when already locked): block if tainted
+  // Acting (or unsafe_acting when already locked): block if locked
   if (isLocked) {
     blockTool(state, toolName, toolInput, sessionId, tmpDir);
     return;
   }
 
-  // Acting but session not tainted → passthrough
+  // Acting but session not locked → passthrough
 }
 
 const isEntry = process.argv[1] &&

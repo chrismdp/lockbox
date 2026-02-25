@@ -1,5 +1,5 @@
 #!/bin/bash
-# Lockbox statusline wrapper — prepends taint icon, chains to original statusline
+# Lockbox statusline wrapper — prepends lock icon, chains to original statusline
 # Discovers the original statusline command from ~/.claude/settings.json automatically.
 # Install by adding to settings.local.json (overrides settings.json's statusLine).
 
@@ -7,7 +7,7 @@ INPUT=$(cat)
 SESSION_ID=$(echo "$INPUT" | jq -r '.session_id' 2>/dev/null)
 STATE="/tmp/lockbox-state-${SESSION_ID}.json"
 
-# Lockbox icon: red key when tainted, dim grid when clean
+# Lockbox icon: red key when locked, dim grid when clean
 if [ -f "$STATE" ] && [ "$(jq -r '.locked' "$STATE" 2>/dev/null)" = "true" ]; then
     printf '\033[31m⚿\033[0m '
 else

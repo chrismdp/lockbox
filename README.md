@@ -1,8 +1,8 @@
 # Lockbox
 
-<img src="lockbox.jpg" alt="Lockbox: agent reads untrusted content, session taints, actions blocked, plan mode escape hatch, clean agent executes" />
+<img src="lockbox.jpg" alt="Lockbox: agent reads untrusted content, session locks, actions blocked, plan mode escape hatch, clean agent executes" />
 
-Taint-aware context quarantine for Claude Code. Blocks external actions when untrusted data enters your session. Read the [announcement blog post](https://chrismdp.com/lockbox-prompt-injection-defence/) for the full security model and why it matters.
+Context quarantine for Claude Code. Locks external actions when untrusted data enters your session. Read the [announcement blog post](https://chrismdp.com/lockbox-prompt-injection-defence/) for the full security model and why it matters.
 
 ## The problem
 
@@ -16,14 +16,14 @@ Simon Willison calls the combination of **private data**, **untrusted content**,
 
 Lockbox automatically detects when untrusted data enters your Claude Code session and blocks external actions until you review a plan in a clean context.
 
-1. **You read something external** (WebFetch, curl, Perplexity) and Lockbox marks your session as tainted
+1. **You read something external** (WebFetch, curl, Perplexity) and Lockbox locks your session
 2. **You keep working normally** because file reads, writes, edits, searches, and local Bash all still work
 3. **You try to take an external action** (git push, send email, deploy) and Lockbox blocks it
 4. **You enter plan mode** and write out exactly what you want to do with all concrete data inline
-5. **You clear context** so Claude Code starts fresh from your plan, with no tainted data in the conversation
+5. **You clear context** so Claude Code starts fresh from your plan, with no untrusted data in the conversation
 6. **The clean agent executes your plan** and external actions proceed safely
 
-The harness detects the taint, not the agent. This matters because by the time untrusted data enters the conversation, the agent may already be compromised. Lockbox does not ask the agent whether it has been influenced. It tracks what the agent has been exposed to and restricts what it can do next.
+The harness detects the lock, not the agent. This matters because by the time untrusted data enters the conversation, the agent may already be compromised. Lockbox does not ask the agent whether it has been influenced. It tracks what the agent has been exposed to and restricts what it can do next.
 
 ## Install
 
@@ -49,13 +49,13 @@ Open `~/.claude/settings.json` and add `WebFetch` to your global allow list:
 }
 ```
 
-Without Lockbox, allowing unrestricted WebFetch is risky — a compromised agent could fetch attacker-controlled content and then act on it. With Lockbox, the fetch taints the session and all external actions are blocked until you clear context through plan mode. The damage path is cut, so the fetch is safe.
+Without Lockbox, allowing unrestricted WebFetch is risky — a compromised agent could fetch attacker-controlled content and then act on it. With Lockbox, the fetch locks the session and all external actions are blocked until you clear context through plan mode. The damage path is cut, so the fetch is safe.
 
 ## Usage
 
 Just use Claude Code the way you normally would. Lockbox stays out of the way until it matters. You will not notice it on sessions that only do local work.
 
-When your session reads external content (a web page, an API, an email), Lockbox taints the session silently. Everything local keeps working — reads, writes, edits, search, Bash. The only difference is that external actions like git push or sending messages are blocked until you clear context.
+When your session reads external content (a web page, an API, an email), Lockbox locks the session silently. Everything local keeps working — reads, writes, edits, search, Bash. The only difference is that external actions like git push or sending messages are blocked until you clear context.
 
 In practice this means you move to plan mode more often for tasks that mix external reads with external actions. Claude will suggest this when it gets blocked. The overall experience is **fewer interruptions**, not more — you stop getting permission prompts for every WebFetch and curl because Lockbox handles the risk structurally.
 
@@ -68,7 +68,7 @@ When Lockbox blocks an action, Claude will automatically enter plan mode and wri
   2. Yes, and bypass permissions
 ```
 
-**Always pick option 1** ("clear context"). Option 2 keeps the tainted conversation in context, which defeats the entire purpose — the compromised data stays in the session and the agent can still act on it. Option 1 starts a fresh agent that executes the plan with no tainted data in the conversation.
+**Always pick option 1** ("clear context"). Option 2 keeps the locked conversation in context, which defeats the entire purpose — the untrusted data stays in the session and the agent can still act on it. Option 1 starts a fresh agent that executes the plan with no untrusted data in the conversation.
 
 ## How it works
 
@@ -76,18 +76,18 @@ When Lockbox blocks an action, Claude will automatically enter plan mode and wri
 
 Every tool and Bash command falls into one of four categories:
 
-| Category | What it does | Blocked when tainted? | Examples |
+| Category | What it does | Blocked when locked? | Examples |
 |---|---|---|---|
 | **safe** | Local read/write operations | Never | Read, Write, Edit, Grep, Glob, git status |
-| **unsafe** | Reads external data | Never (but taints the session) | WebFetch, Perplexity, curl |
+| **unsafe** | Reads external data | Never (but locks the session) | WebFetch, Perplexity, curl |
 | **acting** | Takes external action | Yes | git push, ssh, npm publish, send email |
 | **unsafe_acting** | Reads external AND acts | Yes (after first use) | curl piped to external service |
 
-### Tainting
+### Locking
 
 Session state lives in `/tmp/lockbox-state-{session_id}.json`. When any `unsafe` tool runs, Lockbox sets `locked: true` and records what caused it. From that point, all `acting` tools are blocked before execution with a message explaining why and what to do next.
 
-Detection happens at the harness level through a `PreToolUse` hook. The hook fires before the tool executes, checks session state, and returns a block decision if the session is tainted. The agent never gets a chance to run the blocked tool.
+Detection happens at the harness level through a `PreToolUse` hook. The hook fires before the tool executes, checks session state, and returns a block decision if the session is locked. The agent never gets a chance to run the blocked tool.
 
 ### Pattern priority
 
@@ -98,7 +98,7 @@ For Bash commands, Lockbox classifies by checking patterns in this order:
 3. `unsafe` (external reads)
 4. `acting` (e.g. git push, ssh, sudo)
 5. `safe` (local file operations, git status)
-6. Default: `acting` (unknown commands are blocked when tainted)
+6. Default: `acting` (unknown commands are blocked when locked)
 
 For piped or chained commands (`|`, `&`, `;`), each segment is classified independently. If any segment is `unsafe` and any segment is `acting`, the whole command is classified as `unsafe_acting`.
 
