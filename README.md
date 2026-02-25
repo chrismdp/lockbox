@@ -12,13 +12,13 @@ Permission prompts do not help. You approve 85 commands correctly, stop reading 
 
 Simon Willison calls the combination of **private data**, **untrusted content**, and **external communication** the [lethal trifecta](https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/). When all three exist in the same session, you have a data exfiltration system. Claude Code sessions routinely have all three.
 
-## What lockbox does
+## What Lockbox does
 
 Lockbox automatically detects when untrusted data enters your Claude Code session and blocks external actions until you review a plan in a clean context.
 
-1. **You read something external** (WebFetch, curl, Perplexity) and lockbox marks your session as tainted
+1. **You read something external** (WebFetch, curl, Perplexity) and Lockbox marks your session as tainted
 2. **You keep working normally** because file reads, writes, edits, searches, and local Bash all still work
-3. **You try to take an external action** (git push, send email, deploy) and lockbox blocks it
+3. **You try to take an external action** (git push, send email, deploy) and Lockbox blocks it
 4. **You enter plan mode** and write out exactly what you want to do with all concrete data inline
 5. **You clear context** so Claude Code starts fresh from your plan, with no tainted data in the conversation
 6. **The clean agent executes your plan** and external actions proceed safely
@@ -29,7 +29,7 @@ The harness detects the taint, not the agent. This matters because by the time u
 
 ### 1. Add the plugin
 
-Install lockbox from the [Claude Code marketplace](https://github.com/chrismdp/claude-marketplace):
+Install Lockbox from the [Claude Code marketplace](https://github.com/chrismdp/claude-marketplace):
 
 ```
 claude mcp add-from-claude-marketplace lockbox
@@ -49,21 +49,17 @@ Open `~/.claude/settings.json` and add `WebFetch` to your global allow list:
 }
 ```
 
-Without lockbox, allowing unrestricted WebFetch is risky — a compromised agent could fetch attacker-controlled content and then act on it. With lockbox, the fetch taints the session and all external actions are blocked until you clear context through plan mode. The damage path is cut, so the fetch is safe.
-
-### 3. Use Claude Code normally
-
-There is nothing else to configure.
+Without Lockbox, allowing unrestricted WebFetch is risky — a compromised agent could fetch attacker-controlled content and then act on it. With Lockbox, the fetch taints the session and all external actions are blocked until you clear context through plan mode. The damage path is cut, so the fetch is safe.
 
 ## Usage
 
 Just use Claude Code the way you normally would. Lockbox stays out of the way until it matters. You will not notice it on sessions that only do local work.
 
-When your session reads external content (a web page, an API, an email), lockbox taints the session silently. Everything local keeps working — reads, writes, edits, search, Bash. The only difference is that external actions like git push or sending messages are blocked until you clear context.
+When your session reads external content (a web page, an API, an email), Lockbox taints the session silently. Everything local keeps working — reads, writes, edits, search, Bash. The only difference is that external actions like git push or sending messages are blocked until you clear context.
 
-In practice this means you move to plan mode more often for tasks that mix external reads with external actions. Claude will suggest this when it gets blocked. The overall experience is **fewer interruptions**, not more — you stop getting permission prompts for every WebFetch and curl because lockbox handles the risk structurally.
+In practice this means you move to plan mode more often for tasks that mix external reads with external actions. Claude will suggest this when it gets blocked. The overall experience is **fewer interruptions**, not more — you stop getting permission prompts for every WebFetch and curl because Lockbox handles the risk structurally.
 
-### When lockbox blocks an action
+### When Lockbox blocks an action
 
 When you see the block message, enter plan mode and write out what you want done. Then **exit plan mode and select "Clear context and bypass permissions"** — not "Start plan". This is the critical step. "Start plan" keeps the tainted conversation in context, which defeats the purpose. "Clear context" starts a fresh agent that executes from your plan with no tainted data in the conversation.
 
@@ -88,13 +84,13 @@ Every tool and Bash command falls into one of four categories:
 
 ### Tainting
 
-Session state lives in `/tmp/lockbox-state-{session_id}.json`. When any `unsafe` tool runs, lockbox sets `locked: true` and records what caused it. From that point, all `acting` tools are blocked before execution with a message explaining why and what to do next.
+Session state lives in `/tmp/lockbox-state-{session_id}.json`. When any `unsafe` tool runs, Lockbox sets `locked: true` and records what caused it. From that point, all `acting` tools are blocked before execution with a message explaining why and what to do next.
 
 Detection happens at the harness level through a `PreToolUse` hook. The hook fires before the tool executes, checks session state, and returns a block decision if the session is tainted. The agent never gets a chance to run the blocked tool.
 
 ### Pattern priority
 
-For Bash commands, lockbox classifies by checking patterns in this order:
+For Bash commands, Lockbox classifies by checking patterns in this order:
 
 1. `override_safe` (e.g. `--help` on any command)
 2. `unsafe_acting` (e.g. curl, wget)
@@ -113,7 +109,7 @@ Lockbox uses a three-layer configuration hierarchy. Each layer can add patterns 
 
 | Layer | File | Scope |
 |---|---|---|
-| Plugin defaults | `lockbox.json` | Ships with lockbox |
+| Plugin defaults | `lockbox.json` | Ships with Lockbox |
 | User overrides | `~/.claude/lockbox.json` | All your projects |
 | Project overrides | `.claude/lockbox.json` | This project only, committable |
 
@@ -157,11 +153,11 @@ Lockbox is early and actively developed. Every team has different tools and ever
 - **Try it** and use Claude Code normally
 - **Open issues** at [github.com/chrismdp/claude-marketplace](https://github.com/chrismdp/claude-marketplace) for bugs, feature requests, and pattern suggestions
 - **Give me feedback**: what got blocked that should not have? What got through that should not have?
-- **Contribute patterns** for tools lockbox does not classify yet
+- **Contribute patterns** for tools Lockbox does not classify yet
 
 ## Background
 
-Lockbox implements ideas from several lines of research on prompt injection defence:
+Lockbox builds on several lines of research on prompt injection defence:
 
 - [The lethal trifecta](https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/) (Simon Willison, 2025): private data + untrusted content + external communication = exfiltration
 - [CaMeL](https://arxiv.org/abs/2503.18813) (Google DeepMind, 2025): separates control flow from data flow with capability-based security
