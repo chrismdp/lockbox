@@ -1,8 +1,8 @@
 # Lockbox
 
-Taint-aware context quarantine for Claude Code. Blocks external actions when untrusted data enters your session. Read the [announcement blog post](https://chrismdp.com/lockbox-prompt-injection-defence/) for the full security model and why it matters.
-
 <img src="lockbox.jpg" alt="Lockbox: agent reads untrusted content, session taints, actions blocked, plan mode escape hatch, clean agent executes" />
+
+Taint-aware context quarantine for Claude Code. Blocks external actions when untrusted data enters your session. Read the [announcement blog post](https://chrismdp.com/lockbox-prompt-injection-defence/) for the full security model and why it matters.
 
 ## The problem
 
