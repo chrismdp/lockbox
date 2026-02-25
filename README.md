@@ -61,13 +61,18 @@ In practice this means you move to plan mode more often for tasks that mix exter
 
 ### When Lockbox blocks an action
 
-When you see the block message, enter plan mode and write out what you want done. Then **exit plan mode and select "Clear context and bypass permissions"** — not "Start plan". This is the critical step. "Start plan" keeps the tainted conversation in context, which defeats the purpose. "Clear context" starts a fresh agent that executes from your plan with no tainted data in the conversation.
+When you see the block message, enter plan mode and write out what you want done:
 
 1. Enter plan mode (`/plan` or `EnterPlanMode`)
 2. Write a plan with **all concrete data inline**: exact email bodies, branch names, URLs, commit messages. No vague references like "the email" or "the page" — the clean agent will not have the tainted conversation to refer back to
-3. Exit plan mode
-4. **Select "Clear context and bypass permissions"** (not "Start plan")
-5. The clean agent executes your plan safely
+3. Exit plan mode — you will see two options:
+
+```
+❯ 1. Yes, clear context (21% used) and bypass permissions   ← PICK THIS ONE
+  2. Yes, and bypass permissions
+```
+
+**Always pick option 1** ("clear context"). Option 2 keeps the tainted conversation in context, which defeats the entire purpose — the compromised data stays in the session and the agent can still act on it. Option 1 starts a fresh agent that executes from your plan with no tainted data in the conversation.
 
 ## How it works
 
