@@ -114,13 +114,50 @@ def classify_tool(tool_name: str, tool_input: dict, config: dict) -> str:
     return "acting"
 
 
+def split_command(command: str) -> list:
+    """Split command on unquoted |, &, ; operators, respecting quotes and escapes."""
+    segments = []
+    current = []
+    in_single = False
+    in_double = False
+    escaped = False
+
+    for char in command:
+        if escaped:
+            current.append(char)
+            escaped = False
+            continue
+        if char == "\\":
+            current.append(char)
+            escaped = True
+            continue
+        if char == "'" and not in_double:
+            in_single = not in_single
+            current.append(char)
+            continue
+        if char == '"' and not in_single:
+            in_double = not in_double
+            current.append(char)
+            continue
+        if not in_single and not in_double and char in "|;&":
+            segments.append("".join(current))
+            current = []
+            continue
+        current.append(char)
+
+    if current:
+        segments.append("".join(current))
+
+    return [s.strip() for s in segments if s.strip()]
+
+
 def classify_bash(command: str, patterns: dict) -> str:
     """Split piped/chained commands, classify each segment.
 
     Tracks unsafe (taints context) and acting (external action) independently.
     A pipe that both reads untrusted data and acts externally gets unsafe_acting.
     """
-    segments = re.split(r"\s*[|;&]+\s*", command)
+    segments = split_command(command)
 
     has_unsafe = False
     has_acting = False
