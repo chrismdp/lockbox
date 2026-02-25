@@ -1,0 +1,59 @@
+{
+  "tools": {
+    "safe": [
+      "Glob", "Grep", "Read", "Write", "Edit", "NotebookEdit",
+      "WebSearch", "ToolSearch", "Skill",
+      "TaskOutput", "TaskCreate", "TaskGet", "TaskUpdate", "TaskList",
+      "TodoWrite",
+      "EnterPlanMode", "ExitPlanMode",
+      "AskUserQuestion", "EnterWorktree"
+    ],
+    "acting": [
+      "Task", "TaskStop",
+      "TeamCreate", "TeamDelete", "SendMessage"
+    ],
+    "unsafe": [],
+    "unsafe_acting": [
+      "WebFetch"
+    ]
+  },
+  "mcp_tools": {
+    "mcp__perplexity__perplexity_search": "safe",
+    "mcp__perplexity__perplexity_ask": "unsafe",
+    "mcp__perplexity__perplexity_reason": "unsafe",
+    "mcp__perplexity__perplexity_research": "unsafe",
+    "mcp__nanoclaw__list_tasks": "safe",
+    "mcp__nanoclaw__send_message": "acting",
+    "mcp__nanoclaw__schedule_task": "acting"
+  },
+  "mcp_default": "acting",
+  "bash_patterns": {
+    "unsafe": [
+      "gog\\s+gmail\\s+(read|search|get|list)",
+      "curl\\s",
+      "wget\\s"
+    ],
+    "acting": [
+      "gog\\s+gmail\\s+(send|drafts?\\s+create|delete|trash)",
+      "gog\\s+calendar\\s+(create|update|delete)",
+      "gog\\s+drive\\s+(upload|create|delete|move)",
+      "gog\\s+sheets\\s+(update|append|clear|create)",
+      "reclaim\\s+(create|update|delete|complete|start)",
+      "git\\s+(push|reset|rebase)",
+      "op\\s",
+      "npm\\s+publish",
+      "sudo\\s"
+    ],
+    "safe": [
+      "^(date|ls|cat|head|tail|wc|find|grep|rg)(\\s|$)",
+      "ck\\s",
+      "gog\\s+calendar\\s+(events|get|list)",
+      "gog\\s+drive\\s+(list|get|download)",
+      "gog\\s+sheets\\s+get",
+      "git\\s+(status|log|diff|show|branch|add|commit)",
+      "reclaim\\s+(list|search|get)",
+      "python\\s+scripts/",
+      "^(rm|mv|cp|mkdir)\\s"
+    ]
+  }
+}
