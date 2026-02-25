@@ -79,21 +79,33 @@ def classify_tool(tool_name: str, tool_input: dict, config: dict) -> str:
 
 
 def classify_bash(command: str, patterns: dict) -> str:
-    """Split piped/chained commands, classify each segment, return most restrictive."""
+    """Split piped/chained commands, classify each segment.
+
+    Tracks unsafe (taints context) and acting (external action) independently.
+    A pipe that both reads untrusted data and acts externally gets unsafe_acting.
+    """
     segments = re.split(r"\s*[|;&]+\s*", command)
 
-    priority = {"safe": 0, "unsafe": 1, "acting": 2, "unsafe_acting": 3}
-    worst = "safe"
+    has_unsafe = False
+    has_acting = False
 
     for seg in segments:
         seg = seg.strip()
         if not seg:
             continue
         cat = classify_bash_segment(seg, patterns)
-        if priority.get(cat, 2) > priority.get(worst, 0):
-            worst = cat
+        if cat in ("unsafe", "unsafe_acting"):
+            has_unsafe = True
+        if cat in ("acting", "unsafe_acting"):
+            has_acting = True
 
-    return worst
+    if has_unsafe and has_acting:
+        return "unsafe_acting"
+    if has_acting:
+        return "acting"
+    if has_unsafe:
+        return "unsafe"
+    return "safe"
 
 
 def classify_bash_segment(segment: str, patterns: dict) -> str:
