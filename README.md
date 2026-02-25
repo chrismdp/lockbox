@@ -2,7 +2,7 @@
 
 Taint-aware context quarantine for Claude Code. Blocks external actions when untrusted data enters your session.
 
-<img src="lockbox.jpg" alt="Lockbox: agent reads untrusted content, session taints, actions blocked, plan mode escape hatch, clean agent executes" width="600" />
+<img src="lockbox.jpg" alt="Lockbox: agent reads untrusted content, session taints, actions blocked, plan mode escape hatch, clean agent executes" />
 
 ## The problem
 
@@ -27,17 +27,17 @@ The harness detects the taint, not the agent. This matters because by the time u
 
 ## Install
 
-Get lockbox from the [Claude Code marketplace](https://github.com/chrismdp/claude-marketplace):
+### 1. Add the plugin
+
+Install lockbox from the [Claude Code marketplace](https://github.com/chrismdp/claude-marketplace):
 
 ```
 claude mcp add-from-claude-marketplace lockbox
 ```
 
-## Relax your permissions
+### 2. Allow WebFetch
 
-Once lockbox is running, you can stop individually approving every WebFetch. Lockbox taints the session when external data enters, so even if you auto-approve fetches, any dangerous follow-up actions are structurally blocked. The architectural safety makes per-fetch permission prompts redundant.
-
-Add `WebFetch` to your global allow list in `~/.claude/settings.json`:
+Open `~/.claude/settings.json` and add `WebFetch` to your global allow list:
 
 ```json
 {
@@ -49,7 +49,11 @@ Add `WebFetch` to your global allow list in `~/.claude/settings.json`:
 }
 ```
 
-Without lockbox, allowing unrestricted WebFetch is risky because a compromised agent could fetch attacker-controlled content and then act on it. With lockbox, the fetch taints the session and all external actions are blocked until you clear context through plan mode. The fetch is safe because the damage path is cut.
+Without lockbox, allowing unrestricted WebFetch is risky — a compromised agent could fetch attacker-controlled content and then act on it. With lockbox, the fetch taints the session and all external actions are blocked until you clear context through plan mode. The damage path is cut, so the fetch is safe.
+
+### 3. Use Claude Code normally
+
+There is nothing else to configure. Lockbox runs automatically in the background. You will only notice it when it blocks an external action after untrusted data has entered your session.
 
 This is the counterintuitive result: lockbox makes your agent **more** useful, not less. Without it, you either block external reads entirely or approve each one manually and hope you catch the bad one. With lockbox, approve them all. The system prevents the damage regardless.
 
