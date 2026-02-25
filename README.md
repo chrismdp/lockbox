@@ -59,20 +59,16 @@ When your session reads external content (a web page, an API, an email), Lockbox
 
 In practice this means you move to plan mode more often for tasks that mix external reads with external actions. Claude will suggest this when it gets blocked. The overall experience is **fewer interruptions**, not more — you stop getting permission prompts for every WebFetch and curl because Lockbox handles the risk structurally.
 
-### When Lockbox blocks an action
+### When Lockbox presents a plan
 
-When you see the block message, enter plan mode and write out what you want done:
-
-1. Enter plan mode (`/plan` or `EnterPlanMode`)
-2. Write a plan with **all concrete data inline**: exact email bodies, branch names, URLs, commit messages. No vague references like "the email" or "the page" — the clean agent will not have the tainted conversation to refer back to
-3. Exit plan mode — you will see two options:
+When Lockbox blocks an action, Claude will automatically enter plan mode and write a plan for the blocked actions. When it exits plan mode, you will see two options:
 
 ```
 ❯ 1. Yes, clear context (21% used) and bypass permissions   ← PICK THIS ONE
   2. Yes, and bypass permissions
 ```
 
-**Always pick option 1** ("clear context"). Option 2 keeps the tainted conversation in context, which defeats the entire purpose — the compromised data stays in the session and the agent can still act on it. Option 1 starts a fresh agent that executes from your plan with no tainted data in the conversation.
+**Always pick option 1** ("clear context"). Option 2 keeps the tainted conversation in context, which defeats the entire purpose — the compromised data stays in the session and the agent can still act on it. Option 1 starts a fresh agent that executes the plan with no tainted data in the conversation.
 
 ## How it works
 
