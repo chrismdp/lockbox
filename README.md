@@ -53,9 +53,25 @@ Without lockbox, allowing unrestricted WebFetch is risky — a compromised agent
 
 ### 3. Use Claude Code normally
 
-There is nothing else to configure. Lockbox runs automatically in the background. You will only notice it when it blocks an external action after untrusted data has entered your session.
+There is nothing else to configure.
 
-This is the counterintuitive result: lockbox makes your agent **more** useful, not less. Without it, you either block external reads entirely or approve each one manually and hope you catch the bad one. With lockbox, approve them all. The system prevents the damage regardless.
+## Usage
+
+Just use Claude Code the way you normally would. Lockbox stays out of the way until it matters. You will not notice it on sessions that only do local work.
+
+When your session reads external content (a web page, an API, an email), lockbox taints the session silently. Everything local keeps working — reads, writes, edits, search, Bash. The only difference is that external actions like git push or sending messages are blocked until you clear context.
+
+In practice this means you move to plan mode more often for tasks that mix external reads with external actions. Claude will suggest this when it gets blocked. The overall experience is **fewer interruptions**, not more — you stop getting permission prompts for every WebFetch and curl because lockbox handles the risk structurally.
+
+### When lockbox blocks an action
+
+When you see the block message, enter plan mode and write out what you want done. Then **exit plan mode and select "Clear context and bypass permissions"** — not "Start plan". This is the critical step. "Start plan" keeps the tainted conversation in context, which defeats the purpose. "Clear context" starts a fresh agent that executes from your plan with no tainted data in the conversation.
+
+1. Enter plan mode (`/plan` or `EnterPlanMode`)
+2. Write a plan with **all concrete data inline**: exact email bodies, branch names, URLs, commit messages. No vague references like "the email" or "the page" — the clean agent will not have the tainted conversation to refer back to
+3. Exit plan mode
+4. **Select "Clear context and bypass permissions"** (not "Start plan")
+5. The clean agent executes your plan safely
 
 ## How it works
 
@@ -133,18 +149,6 @@ To remove a plugin default pattern, prefix it with `!`:
 ```
 
 See [`lockbox.example.json`](lockbox.example.json) for a minimal starter config.
-
-### Plan mode escape hatch
-
-When lockbox blocks an action, you can still get it done:
-
-1. Enter plan mode (`/plan` or `EnterPlanMode`)
-2. Write a plan with **all concrete data inline**: exact email bodies, branch names, URLs. No vague references like "the email" or "the page"
-3. Order phases: safe actions first, then acting, then unsafe
-4. Exit plan mode and select "Clear context and bypass permissions"
-5. Claude Code starts fresh from your plan with no tainted data in conversation
-
-The clean agent executes from a plan written by you, not from a conversation that may contain adversarial instructions.
 
 ## Get involved
 
