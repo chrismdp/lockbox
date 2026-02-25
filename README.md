@@ -156,6 +156,14 @@ Lockbox is early and actively developed. Every team has different tools and ever
 - **Give me feedback**: what got blocked that should not have? What got through that should not have?
 - **Contribute patterns** for tools Lockbox does not classify yet
 
+## Future work
+
+### Trusted domains
+
+Fetching documentation (MDN, Node.js docs) locks the session even though these sites have no user-generated content and near-zero prompt injection risk. A `trusted_domains` config key could skip locking for known-safe origins.
+
+The challenge is that Claude Code already has its own domain allowlists for WebFetch permissions, but those reflect "don't prompt me" not "this content is safe". A user might have `reddit.com` allowed for convenience while reddit comments are full of injection risk. Lockbox cannot inherit from Claude Code's permission system because the two concepts are different — one is about user convenience, the other is about content safety. Any trusted domains list would need to be Lockbox-specific and empty by default.
+
 ## Background
 
 Lockbox builds on several lines of research on prompt injection defence:
