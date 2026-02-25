@@ -1,6 +1,6 @@
 # Lockbox
 
-Taint-aware context quarantine for Claude Code. Blocks external actions when untrusted data enters your session.
+Taint-aware context quarantine for Claude Code. Blocks external actions when untrusted data enters your session. Read the [announcement blog post](https://chrismdp.com/lockbox-prompt-injection-defence/) for the full security model and why it matters.
 
 <img src="lockbox.jpg" alt="Lockbox: agent reads untrusted content, session taints, actions blocked, plan mode escape hatch, clean agent executes" />
 
@@ -97,7 +97,7 @@ Lockbox uses a three-layer configuration hierarchy. Each layer can add patterns 
 
 | Layer | File | Scope |
 |---|---|---|
-| Plugin defaults | `scripts/lockbox-classify.json` | Ships with lockbox |
+| Plugin defaults | `lockbox.json` | Ships with lockbox |
 | User overrides | `~/.claude/lockbox.json` | All your projects |
 | Project overrides | `.claude/lockbox.json` | This project only, committable |
 
