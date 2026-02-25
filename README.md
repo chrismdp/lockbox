@@ -2,7 +2,7 @@
 
 <img src="lockbox.jpg" alt="Lockbox: agent reads untrusted content, session locks, actions blocked, plan mode escape hatch, clean agent executes" />
 
-Context quarantine for Claude Code. Locks external actions when untrusted data enters your session. Read the [announcement blog post](https://chrismdp.com/lockbox-prompt-injection-defence/) for the full security model and why it matters.
+Context quarantine for Claude Code. Locks external actions when untrusted data enters your session. Read the [announcement blog post](https://chrismdp.com/lockbox-constrain-your-bots-to-set-them-free/) for the full security model and why it matters.
 
 ## The problem
 
@@ -173,4 +173,4 @@ Lockbox builds on several lines of research on prompt injection defence:
 - [Design Patterns for Securing LLM Agents](https://arxiv.org/abs/2506.08837) (2025): six patterns including plan-then-execute and dual LLM
 - [The Dual LLM pattern](https://simonwillison.net/2023/Apr/25/dual-llm-pattern/) (Simon Willison, 2023): privileged vs quarantined LLM separation
 
-See the [full blog post](https://chrismdp.com/lockbox-prompt-injection-defence/) for a detailed explanation of the security model and why it matters.
+See the [full blog post](https://chrismdp.com/lockbox-constrain-your-bots-to-set-them-free/) for a detailed explanation of the security model and why it matters.
