@@ -65,7 +65,7 @@ export function loadConfig(opts?: {
   const homeDir = opts?.homeDir ?? os.homedir();
   const cwd = opts?.cwd ?? process.cwd();
 
-  const defaultsPath = path.join(pluginRoot, "scripts", "lockbox-defaults.json");
+  const defaultsPath = path.join(pluginRoot, "lockbox.json");
   const base: LockboxConfig = JSON.parse(fs.readFileSync(defaultsPath, "utf-8"));
 
   const overridePaths = [

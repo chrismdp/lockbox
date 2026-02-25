@@ -17,10 +17,9 @@ beforeEach(() => {
   tmpPlugin = fs.mkdtempSync(path.join(os.tmpdir(), "lockbox-hookp-"));
 
   // Set up plugin defaults
-  fs.mkdirSync(path.join(tmpPlugin, "scripts"));
   fs.copyFileSync(
-    path.join(__dirname, "..", "scripts", "lockbox-defaults.json"),
-    path.join(tmpPlugin, "scripts", "lockbox-defaults.json"),
+    path.join(__dirname, "..", "lockbox.json"),
+    path.join(tmpPlugin, "lockbox.json"),
   );
 
   process.env.CLAUDE_PLUGIN_ROOT = tmpPlugin;

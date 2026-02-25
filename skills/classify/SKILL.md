@@ -17,7 +17,7 @@ Lockbox uses three configuration layers, merged in order (later layers override 
 
 | Layer | File | Purpose |
 |-------|------|---------|
-| Plugin defaults | `${CLAUDE_PLUGIN_ROOT}/scripts/lockbox-defaults.json` | Ships with plugin — **never edit** |
+| Plugin defaults | `${CLAUDE_PLUGIN_ROOT}/lockbox.json` | Ships with plugin — **never edit** |
 | User overrides | `~/.claude/lockbox.json` | Personal tools across all projects |
 | Project overrides | `.claude/lockbox.json` | Project-specific tools, committable |
 

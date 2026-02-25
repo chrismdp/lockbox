@@ -76,9 +76,8 @@ describe("loadConfig", () => {
     tmpCwd = fs.mkdtempSync(path.join(os.tmpdir(), "lockbox-cwd-"));
 
     // Create plugin defaults
-    fs.mkdirSync(path.join(tmpPlugin, "scripts"));
     fs.writeFileSync(
-      path.join(tmpPlugin, "scripts", "lockbox-defaults.json"),
+      path.join(tmpPlugin, "lockbox.json"),
       JSON.stringify({
         tools: { safe: ["Read"], acting: ["TaskStop"] },
         mcp_tools: {},
