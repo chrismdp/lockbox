@@ -1,6 +1,6 @@
 import * as fs from "fs";
-import { HookInput } from "./types";
-import { deleteState } from "./state";
+import { HookInput } from "./types.js";
+import { deleteState } from "./state.js";
 
 export function main(stdinData?: string, tmpDir?: string): void {
   let hookInput: HookInput;
@@ -17,7 +17,6 @@ export function main(stdinData?: string, tmpDir?: string): void {
   deleteState(sessionId, tmpDir);
 }
 
-/* istanbul ignore next */
-if (require.main === module) {
-  main();
-}
+const isEntry = process.argv[1] &&
+  import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/"));
+if (isEntry) main();

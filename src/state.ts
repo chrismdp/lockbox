@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { LockboxState } from "./types";
+import { LockboxState } from "./types.js";
 
 const DEFAULT_STATE: LockboxState = {
   locked: false,

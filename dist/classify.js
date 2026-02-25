@@ -1,11 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.classifyTool = classifyTool;
-exports.splitCommand = splitCommand;
-exports.classifyBashSegment = classifyBashSegment;
-exports.classifyBash = classifyBash;
-exports.toolDescription = toolDescription;
-function classifyTool(toolName, toolInput, config) {
+export function classifyTool(toolName, toolInput, config) {
     const tools = config.tools;
     if (tools.safe?.includes(toolName))
         return "safe";
@@ -32,7 +25,7 @@ function classifyTool(toolName, toolInput, config) {
 /**
  * Split command on unquoted |, &, ; operators, respecting quotes and escapes.
  */
-function splitCommand(command) {
+export function splitCommand(command) {
     const segments = [];
     let current = [];
     let inSingle = false;
@@ -75,7 +68,7 @@ function splitCommand(command) {
  * Classify a single bash segment against pattern lists.
  * Check order: override_safe -> unsafe_acting -> unsafe -> acting -> safe -> default acting.
  */
-function classifyBashSegment(segment, patterns) {
+export function classifyBashSegment(segment, patterns) {
     for (const p of patterns.override_safe ?? []) {
         if (new RegExp(p).test(segment))
             return "safe";
@@ -103,7 +96,7 @@ function classifyBashSegment(segment, patterns) {
  * Tracks unsafe and acting independently — a pipe that both reads untrusted
  * data and acts externally gets unsafe_acting.
  */
-function classifyBash(command, patterns) {
+export function classifyBash(command, patterns) {
     const segments = splitCommand(command);
     let hasUnsafe = false;
     let hasActing = false;
@@ -122,7 +115,7 @@ function classifyBash(command, patterns) {
         return "unsafe";
     return "safe";
 }
-function toolDescription(toolName, toolInput) {
+export function toolDescription(toolName, toolInput) {
     if (toolName === "Bash") {
         const cmd = (toolInput.command ?? "").slice(0, 120);
         return `Bash: ${cmd}`;

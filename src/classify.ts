@@ -1,4 +1,4 @@
-import { Category, LockboxConfig } from "./types";
+import { Category, LockboxConfig } from "./types.js";
 
 export function classifyTool(
   toolName: string,

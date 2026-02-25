@@ -1,55 +1,19 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.main = main;
-const fs = __importStar(require("fs"));
-const state_1 = require("./state");
-const config_1 = require("./config");
-const classify_1 = require("./classify");
+import * as fs from "fs";
+import { loadState, saveState } from "./state.js";
+import { loadConfig } from "./config.js";
+import { classifyTool, toolDescription } from "./classify.js";
 function taintSession(state, toolName, toolInput, sessionId, tmpDir) {
     state.locked = true;
-    state.locked_by = (0, classify_1.toolDescription)(toolName, toolInput);
+    state.locked_by = toolDescription(toolName, toolInput);
     state.locked_at = new Date().toISOString();
     state.blocked_tools = [];
-    (0, state_1.saveState)(sessionId, state, tmpDir);
+    saveState(sessionId, state, tmpDir);
 }
 function blockTool(state, toolName, toolInput, sessionId, tmpDir) {
-    const desc = (0, classify_1.toolDescription)(toolName, toolInput);
+    const desc = toolDescription(toolName, toolInput);
     if (!state.blocked_tools.includes(desc)) {
         state.blocked_tools.push(desc);
-        (0, state_1.saveState)(sessionId, state, tmpDir);
+        saveState(sessionId, state, tmpDir);
     }
     const reason = "LOCKBOX: Action blocked — session contains untrusted data.\n" +
         "\n" +
@@ -66,7 +30,7 @@ function blockTool(state, toolName, toolInput, sessionId, tmpDir) {
     const output = { decision: "block", reason };
     process.stdout.write(JSON.stringify(output));
 }
-function main(stdinData, tmpDir) {
+export function main(stdinData, tmpDir) {
     let hookInput;
     try {
         const raw = stdinData ?? fs.readFileSync(0, "utf-8");
@@ -78,9 +42,9 @@ function main(stdinData, tmpDir) {
     const sessionId = hookInput.session_id ?? "unknown";
     const toolName = hookInput.tool_name ?? "";
     const toolInput = hookInput.tool_input ?? {};
-    const config = (0, config_1.loadConfig)();
-    const state = (0, state_1.loadState)(sessionId, tmpDir);
-    const category = (0, classify_1.classifyTool)(toolName, toolInput, config);
+    const config = loadConfig();
+    const state = loadState(sessionId, tmpDir);
+    const category = classifyTool(toolName, toolInput, config);
     const isLocked = state.locked;
     // Safe: always passthrough
     if (category === "safe")
@@ -107,7 +71,7 @@ function main(stdinData, tmpDir) {
     }
     // Acting but session not tainted → passthrough
 }
-/* istanbul ignore next */
-if (require.main === module) {
+const isEntry = process.argv[1] &&
+    import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/"));
+if (isEntry)
     main();
-}

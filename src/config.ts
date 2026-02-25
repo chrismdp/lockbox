@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { LockboxConfig } from "./types";
+import { LockboxConfig } from "./types.js";
 
 export function mergeList(base: string[], overlay: string[]): string[] {
   const removals = new Set(
@@ -61,7 +61,7 @@ export function loadConfig(opts?: {
   const pluginRoot =
     opts?.pluginRoot ??
     process.env.CLAUDE_PLUGIN_ROOT ??
-    path.resolve(__dirname, "..");
+    path.resolve(import.meta.dirname, "..");
   const homeDir = opts?.homeDir ?? os.homedir();
   const cwd = opts?.cwd ?? process.cwd();
 

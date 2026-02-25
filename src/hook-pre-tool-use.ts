@@ -1,8 +1,8 @@
 import * as fs from "fs";
-import { HookInput, HookOutput, LockboxState } from "./types";
-import { loadState, saveState } from "./state";
-import { loadConfig } from "./config";
-import { classifyTool, toolDescription } from "./classify";
+import { HookInput, HookOutput, LockboxState } from "./types.js";
+import { loadState, saveState } from "./state.js";
+import { loadConfig } from "./config.js";
+import { classifyTool, toolDescription } from "./classify.js";
 
 function taintSession(
   state: LockboxState,
@@ -96,7 +96,6 @@ export function main(stdinData?: string, tmpDir?: string): void {
   // Acting but session not tainted → passthrough
 }
 
-/* istanbul ignore next */
-if (require.main === module) {
-  main();
-}
+const isEntry = process.argv[1] &&
+  import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/"));
+if (isEntry) main();
