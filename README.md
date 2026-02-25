@@ -72,6 +72,8 @@ When Lockbox blocks an action, Claude enters plan mode and writes a plan for the
 
 ## How it works
 
+Here's an infographic of how it works, courtesy of [Nano Banana Pro](https://nanobananapro.com), if a visual guide is more your thing!
+
 <img src="lockbox-infographic.jpg" alt="Lockbox five-stage safety flow: unlocked session uses safe tools, unsafe tool triggers lock, acting tools blocked, agent writes plan, clean session executes plan safely" />
 
 ### Categories
