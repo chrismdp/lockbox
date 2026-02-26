@@ -126,6 +126,21 @@ describe("splitCommand", () => {
     ]);
   });
 
+  it("does not split on >& redirect (2>&1 bug)", () => {
+    expect(splitCommand("gog gmail get --help 2>&1 | head -20")).toEqual([
+      "gog gmail get --help 2>&1",
+      "head -20",
+    ]);
+  });
+
+  it("does not split on >& in stderr redirect", () => {
+    expect(splitCommand("cmd 2>&1")).toEqual(["cmd 2>&1"]);
+  });
+
+  it("still splits on standalone &", () => {
+    expect(splitCommand("cmd1 && cmd2")).toEqual(["cmd1", "cmd2"]);
+  });
+
   it("handles empty input", () => {
     expect(splitCommand("")).toEqual([]);
   });

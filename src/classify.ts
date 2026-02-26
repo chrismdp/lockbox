@@ -79,6 +79,11 @@ export function splitCommand(command: string): string[] {
       continue;
     }
     if (!inSingle && !inDouble && (char === "|" || char === "&" || char === ";")) {
+      // Don't split on & when preceded by > (shell redirect like 2>&1)
+      if (char === "&" && current.length > 0 && current[current.length - 1] === ">") {
+        current.push(char);
+        continue;
+      }
       segments.push(current.join(""));
       current = [];
       continue;
