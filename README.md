@@ -1,6 +1,6 @@
 # Lockbox
 
-<img src="lockbox.jpg" alt="Lockbox: agent reads untrusted content, session locks, actions blocked, plan mode escape hatch, clean agent executes" />
+<img src="lockbox.jpg" alt="Lockbox: agent reads untrusted content, session locks, actions blocked, delegate sub-agent escape, clean agent executes" />
 
 Context quarantine for Claude Code. Locks external actions when untrusted data enters your session. Read the [announcement blog post](https://chrismdp.com/lockbox-constrain-your-bots-to-set-them-free/) for the full security model and why it matters.
 
@@ -14,7 +14,7 @@ Simon Willison calls the combination of **private data**, **untrusted content**,
 
 ## What Lockbox does
 
-Lockbox detects when untrusted data enters your Claude Code session and blocks external actions until you review a plan in a clean context.
+Lockbox detects when untrusted data enters your Claude Code session and blocks external actions until you delegate them through a clean sub-agent.
 
 1. **You read something external** (WebFetch, curl, Perplexity) and Lockbox locks your session
 2. **You keep working normally** because file reads, writes, edits, searches, and local Bash all still work
