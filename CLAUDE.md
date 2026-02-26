@@ -16,7 +16,16 @@ After pushing, always ask: patch, minor, or major?
 - **Minor** (0.6.x → 0.7.0): New features, hook changes, new classification categories
 - **Major** (0.x → 1.0): Breaking config format changes
 
-Bump version in `package.json`, commit with "Bump version to X.Y.Z", and push.
+Bump version in all three places, commit with "Bump version to X.Y.Z", and push:
+- `package.json`
+- `.claude-plugin/plugin.json`
+- `.claude-plugin/marketplace.json`
+
+After pushing, update the local marketplace and plugin:
+```bash
+claude plugin marketplace update lockbox-local
+claude plugin update "lockbox@lockbox-local"
+```
 
 ## Architecture
 
