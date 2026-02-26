@@ -1,6 +1,18 @@
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+/** Convert a glob pattern (with * wildcards) to a RegExp */
+function globToRegex(glob) {
+    const escaped = glob.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
+    return new RegExp("^" + escaped + "$");
+}
+/** Check if any deny entry with Bash(...) would block the given command string */
+function bashDenied(deny, cmd) {
+    return deny.some((d) => {
+        const m = d.match(/^Bash\((.+)\)$/);
+        return m && globToRegex(m[1]).test(cmd);
+    });
+}
 export function checkPermissions(settingsPath) {
     const p = settingsPath ?? path.join(os.homedir(), ".claude", "settings.json");
     let settings;
@@ -14,8 +26,10 @@ export function checkPermissions(settingsPath) {
     if (!perms)
         return [];
     const allow = (perms.allow ?? []);
+    const deny = (perms.deny ?? []);
     const warnings = [];
-    if (allow.some((p) => p === "Bash(*)" || p === "Bash")) {
+    if (allow.some((p) => p === "Bash(*)" || p === "Bash") &&
+        !bashDenied(deny, "echo 'lockbox:clean'")) {
         warnings.push("Bash(*) in allow — echo 'lockbox:clean' auto-runs without user review");
     }
     if (allow.some((p) => p === "Task" || p === "Task(*)" || p.startsWith("Task("))) {

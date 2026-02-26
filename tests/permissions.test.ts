@@ -76,6 +76,45 @@ describe("checkPermissions", () => {
     expect(warnings[0]).toContain("Task not in ask");
   });
 
+  it("no Bash warning when deny covers lockbox:clean", () => {
+    const p = writeSettings({
+      permissions: {
+        allow: ["Bash(*)"],
+        deny: ["Bash(echo*lockbox*clean*)"],
+        ask: ["Task"],
+        defaultMode: "acceptEdits",
+      },
+    });
+    const warnings = checkPermissions(p);
+    expect(warnings.some((w) => w.includes("Bash"))).toBe(false);
+  });
+
+  it("no Bash warning when deny covers with broader pattern", () => {
+    const p = writeSettings({
+      permissions: {
+        allow: ["Bash(*)"],
+        deny: ["Bash(*lockbox*)"],
+        ask: ["Task"],
+        defaultMode: "acceptEdits",
+      },
+    });
+    const warnings = checkPermissions(p);
+    expect(warnings.some((w) => w.includes("Bash"))).toBe(false);
+  });
+
+  it("still warns when deny has unrelated Bash pattern", () => {
+    const p = writeSettings({
+      permissions: {
+        allow: ["Bash(*)"],
+        deny: ["Bash(rm -rf*)"],
+        ask: ["Task"],
+        defaultMode: "acceptEdits",
+      },
+    });
+    const warnings = checkPermissions(p);
+    expect(warnings.some((w) => w.includes("Bash"))).toBe(true);
+  });
+
   it("no warnings when permissions are correct", () => {
     const p = writeSettings({
       permissions: {
