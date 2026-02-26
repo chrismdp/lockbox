@@ -19,9 +19,9 @@ Lockbox detects when untrusted data enters your Claude Code session and blocks e
 1. **You read something external** (WebFetch, curl, Perplexity) and Lockbox locks your session
 2. **You keep working normally** because file reads, writes, edits, searches, and local Bash all still work
 3. **You try to take an external action** (git push, send email, deploy) and Lockbox blocks it
-4. **You enter plan mode** and write out exactly what you want to do with all concrete data inline
-5. **You clear context** so Claude Code starts fresh from your plan, with no untrusted data in the conversation
-6. **The clean agent executes your plan** and external actions proceed safely
+4. **You ask the agent to delegate** and it spawns a clean sub-agent with the concrete action
+5. **You review the delegation prompt** (approval point 1) and the sub-agent executes in a clean context
+6. **You review the results** and run `echo 'lockbox:clean'` to clear the lock (approval point 2)
 
 The harness detects the lock, not the agent. By the time untrusted data enters the conversation, the agent may already be compromised. Lockbox tracks what the agent has been exposed to and restricts what it can do next.
 
@@ -49,7 +49,7 @@ Open `~/.claude/settings.json` and add `WebFetch` to your global allow list:
 }
 ```
 
-Without Lockbox, allowing unrestricted WebFetch is risky. A compromised agent could fetch attacker-controlled content and then act on it. With Lockbox, the fetch locks the session and all external actions are blocked until you clear context through plan mode. The damage path is cut, so the fetch is safe.
+Without Lockbox, allowing unrestricted WebFetch is risky. A compromised agent could fetch attacker-controlled content and then act on it. With Lockbox, the fetch locks the session and all external actions are blocked until you explicitly clear the lock. The damage path is cut, so the fetch is safe.
 
 ## Usage
 
@@ -57,28 +57,21 @@ Just use Claude Code the way you normally would. Lockbox stays out of the way un
 
 When your session reads external content (a web page, an API, an email), Lockbox locks the session silently. Everything local keeps working: reads, writes, edits, search, Bash. The only difference is that external actions like git push or sending messages are blocked until you clear context.
 
-In practice this means you move to plan mode more often for tasks that mix external reads with external actions. Claude will suggest this when it gets blocked. You get **fewer interruptions**, not more, because you stop getting permission prompts for every WebFetch and curl.
+In practice this means delegation happens automatically for tasks that mix external reads with external actions. Claude will suggest this when it gets blocked. You get **fewer interruptions**, not more, because you stop getting permission prompts for every WebFetch and curl.
 
-<img src="lockbox-in-action.png" alt="Lockbox blocking an acting tool in a locked session and prompting the agent to enter plan mode" />
+<img src="lockbox-in-action.png" alt="Lockbox blocking an acting tool in a locked session" />
 
-*Lockbox catches a gmail batch modify command after untrusted data entered the session. The agent acknowledges the block and moves to plan mode.*
+*Lockbox catches a gmail batch modify command after untrusted data entered the session. The agent acknowledges the block and offers to delegate.*
 
-### When Lockbox presents a plan
+### When Lockbox blocks an action
 
-When Lockbox blocks an action, Claude enters plan mode and writes a plan for the blocked actions. When it exits plan mode, you will see two options:
-
-```
-❯ 1. Yes, clear context (21% used) and bypass permissions   ← PICK THIS ONE
-  2. Yes, and bypass permissions
-```
-
-**Always pick option 1** ("clear context"). Option 2 keeps the locked conversation in context, so the untrusted data stays in the session and the agent can still act on it. Option 1 starts a fresh agent that executes the plan with no untrusted data in the conversation.
+When a tool is blocked, the agent stops and tells you what happened. If you ask it to proceed, it spawns a **delegate sub-agent** — a clean agent that runs outside the locked session's state. You review the delegate's instructions before it runs (approval point 1), then review the results and clear the lock (approval point 2).
 
 ## How it works
 
-Here's an infographic of how it works, courtesy of [Nano Banana Pro](https://nanobananapro.com), if a visual guide is more your thing!
+Here's an infographic of the overall flow, courtesy of [Nano Banana Pro](https://nanobananapro.com), if a visual guide is more your thing!
 
-<img src="lockbox-infographic.jpg" alt="Lockbox five-stage safety flow: unlocked session uses safe tools, unsafe tool triggers lock, acting tools blocked, agent writes plan, clean session executes plan safely" />
+<img src="lockbox-infographic.jpg" alt="Lockbox five-stage safety flow: unlocked session uses safe tools, unsafe tool triggers lock, acting tools blocked, delegate executes, clean session resumes" />
 
 ### Categories
 
@@ -97,20 +90,13 @@ Session state lives in `/tmp/lockbox-state-{session_id}.json`. When any `unsafe`
 
 Detection happens at the harness level through a `PreToolUse` hook. The hook fires before the tool executes, checks session state, and returns a block decision if the session is locked. The agent never gets a chance to run the blocked tool.
 
-### Pattern priority
+### Delegation
 
-For Bash commands, Lockbox classifies by checking patterns in this order:
+When a tool is blocked, the agent can delegate the action to a clean sub-agent. The delegate runs with independent lockbox state — it starts clean, executes the action, and its taint is discarded when it finishes. The parent's lock is restored automatically.
 
-1. `override_safe` (e.g. `--help` on any command)
-2. `unsafe_acting` (e.g. curl, wget)
-3. `unsafe` (external reads)
-4. `acting` (e.g. git push, ssh, sudo)
-5. `safe` (local file operations, git status)
-6. Default: `acting` (unknown commands are blocked when locked)
+Two user approval points protect this flow: reviewing the delegate's instructions before it runs, and confirming `echo 'lockbox:clean'` after reviewing the results.
 
-For piped or chained commands (`|`, `&`, `;`), each segment is classified independently. If any segment is `unsafe` and any segment is `acting`, the whole command is classified as `unsafe_acting`.
-
-User patterns prepend to built-in lists, so they are checked first and take priority.
+See [docs/internals.md](docs/internals.md) for the full technical details on hooks, state management, taint propagation, sub-agent session sharing, and the backup/restore mechanism.
 
 ### Configuration
 
@@ -154,6 +140,21 @@ To remove a plugin default pattern, prefix it with `!`:
 ```
 
 See [`lockbox.example.json`](lockbox.example.json) for a minimal starter config.
+
+### Pattern priority
+
+For Bash commands, patterns are checked in this order: `override_safe` > `unsafe_acting` > `unsafe` > `acting` > `safe` > default (`acting`).
+
+For piped or chained commands (`|`, `&`, `;`), each segment is classified independently. If any segment is `unsafe` and any segment is `acting`, the whole command is classified as `unsafe_acting`.
+
+## Development
+
+```bash
+npm run build    # tsc
+npm test         # vitest run
+```
+
+See [docs/internals.md](docs/internals.md) for architecture, diagnostics, and hook input shapes.
 
 ## Get involved
 

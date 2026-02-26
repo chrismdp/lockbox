@@ -23,7 +23,7 @@ function writeSettings(settings: Record<string, unknown>): string {
 describe("checkPermissions", () => {
   it("warns when Bash(*) is in allow", () => {
     const p = writeSettings({
-      permissions: { allow: ["Bash(*)"], defaultMode: "acceptEdits" },
+      permissions: { allow: ["Bash(*)"], ask: ["Task"], defaultMode: "acceptEdits" },
     });
     const warnings = checkPermissions(p);
     expect(warnings).toHaveLength(1);
@@ -33,7 +33,7 @@ describe("checkPermissions", () => {
 
   it("warns when bare Bash is in allow", () => {
     const p = writeSettings({
-      permissions: { allow: ["Bash"], defaultMode: "acceptEdits" },
+      permissions: { allow: ["Bash"], ask: ["Task"], defaultMode: "acceptEdits" },
     });
     const warnings = checkPermissions(p);
     expect(warnings).toHaveLength(1);
@@ -45,9 +45,7 @@ describe("checkPermissions", () => {
       permissions: { allow: ["Task"], defaultMode: "acceptEdits" },
     });
     const warnings = checkPermissions(p);
-    expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toContain("Task");
-    expect(warnings[0]).toContain("sub-agent");
+    expect(warnings.some((w) => w.includes("sub-agent") && w.includes("execute without"))).toBe(true);
   });
 
   it("warns when Task(*) is in allow", () => {
@@ -55,11 +53,10 @@ describe("checkPermissions", () => {
       permissions: { allow: ["Task(*)"], defaultMode: "acceptEdits" },
     });
     const warnings = checkPermissions(p);
-    expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toContain("Task");
+    expect(warnings.some((w) => w.includes("Task") && w.includes("execute without"))).toBe(true);
   });
 
-  it("warns on both Bash(*) and Task together", () => {
+  it("warns on both Bash(*) and Task in allow", () => {
     const p = writeSettings({
       permissions: { allow: ["Bash(*)", "Task(*)"], defaultMode: "acceptEdits" },
     });
@@ -67,10 +64,23 @@ describe("checkPermissions", () => {
     expect(warnings).toHaveLength(2);
   });
 
+  it("warns when Task is not in ask", () => {
+    const p = writeSettings({
+      permissions: {
+        allow: ["Read(/home/**)"],
+        defaultMode: "acceptEdits",
+      },
+    });
+    const warnings = checkPermissions(p);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain("Task not in ask");
+  });
+
   it("no warnings when permissions are correct", () => {
     const p = writeSettings({
       permissions: {
         allow: ["Read(/home/**)", "Bash(git status)"],
+        ask: ["Task"],
         defaultMode: "acceptEdits",
       },
     });

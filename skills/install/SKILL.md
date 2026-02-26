@@ -21,8 +21,10 @@ Two tools MUST require user approval (not auto-allowed) for lockbox to work:
 2. Check `permissions.allow` for dangerous patterns:
    - `Bash(*)` or `Bash` — auto-allows ALL bash including `echo 'lockbox:clean'`
    - `Task`, `Task(*)`, or any `Task(...)` — auto-allows sub-agent creation
-3. Report findings to the user
-4. If issues found, suggest specific fixes and offer to apply them
+3. Check `permissions.ask` for required entries:
+   - `Task` MUST be in `ask` — without it, default permission modes like `acceptEdits` may auto-approve sub-agent prompts without user review
+4. Report findings to the user
+5. If issues found, suggest specific fixes and offer to apply them
 
 ## Fix strategies
 
@@ -35,7 +37,10 @@ This is the most common issue. The user has auto-allowed all Bash commands for c
 Before suggesting Option B, check what Bash patterns the user already has in their allow list to understand their workflow.
 
 **If `Task` is in allow:**
-Remove it. Task should use the default permission mode (which prompts the user) or be explicitly in `ask`.
+Remove it from `allow` and add `Task` to `ask` instead.
+
+**If `Task` is not in `ask`:**
+This is the most common oversight. Default permission modes like `acceptEdits` may auto-approve Task calls without prompting the user. Add `Task` to `permissions.ask` so sub-agent prompts always require explicit approval.
 
 ## Applying changes
 

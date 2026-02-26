@@ -1,5 +1,5 @@
 import * as fs from "fs";
-import { loadState, saveState, findLockedSessions } from "./state.js";
+import { loadState, saveState, findLockedSessions, isDelegateActive, stopDelegate } from "./state.js";
 const TAINT_TOOLS = new Set(["Task", "TaskOutput"]);
 export function main(stdinData, tmpDir) {
     let hookInput;
@@ -14,6 +14,12 @@ export function main(stdinData, tmpDir) {
     if (!TAINT_TOOLS.has(toolName))
         return;
     const sessionId = hookInput.session_id ?? "unknown";
+    // Delegate returning: restore parent state, skip taint propagation.
+    // Fallback for when SubagentStop hooks don't fire.
+    if (isDelegateActive(sessionId, tmpDir)) {
+        stopDelegate(sessionId, tmpDir); // idempotent via marker
+        return;
+    }
     const state = loadState(sessionId, tmpDir);
     if (state.locked)
         return; // already locked, nothing to propagate

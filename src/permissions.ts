@@ -27,6 +27,14 @@ export function checkPermissions(settingsPath?: string): string[] {
     warnings.push(
       "Task in allow — sub-agent prompts execute without user review",
     );
+  } else {
+    const ask = (perms.ask ?? []) as string[];
+    const taskInAsk = ask.some((p) => p === "Task" || p === "Task(*)" || p.startsWith("Task("));
+    if (!taskInAsk) {
+      warnings.push(
+        "Task not in ask — sub-agent prompts may auto-approve depending on permission mode. Add Task to permissions.ask",
+      );
+    }
   }
 
   return warnings;

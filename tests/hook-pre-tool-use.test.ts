@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { main } from "../src/hook-pre-tool-use";
-import { loadState, saveState, getStatePath } from "../src/state";
+import { loadState, saveState, getStatePath, isDelegateActive } from "../src/state";
 import * as permissions from "../src/permissions";
 
 let tmpDir: string;
@@ -117,6 +117,7 @@ describe("hook-pre-tool-use", () => {
     expect(output.reason).toContain("Bash: git push origin main");
     expect(output.reason).toContain("STOP");
     expect(output.reason).toContain("/lockbox:escape");
+    expect(output.reason).toContain("delegate");
   });
 
   it("block message includes permissions warning when misconfigured", () => {
@@ -155,6 +156,50 @@ describe("hook-pre-tool-use", () => {
     expect(output.reason).not.toContain("PERMISSIONS NOT CONFIGURED");
 
     vi.restoreAllMocks();
+  });
+
+  describe("delegate Task detection", () => {
+    function lockSession(sessionId: string) {
+      saveState(sessionId, {
+        locked: true,
+        locked_by: "WebFetch",
+        locked_at: "2025-01-01T00:00:00Z",
+        blocked_tools: [],
+      }, tmpDir);
+    }
+
+    it("starts delegate when Task has subagent_type 'delegate' and session is locked", () => {
+      lockSession("del-task-1");
+      main(hookInput("Task", { subagent_type: "delegate", prompt: "push code" }, "del-task-1"), tmpDir);
+      expect(stdoutData).toBe(""); // allowed through
+      expect(isDelegateActive("del-task-1", tmpDir)).toBe(true);
+      // State should be cleared for delegate
+      const state = loadState("del-task-1", tmpDir);
+      expect(state.locked).toBe(false);
+    });
+
+    it("does not start delegate for non-delegate Task", () => {
+      lockSession("del-task-2");
+      main(hookInput("Task", { subagent_type: "general-purpose", prompt: "research" }, "del-task-2"), tmpDir);
+      expect(stdoutData).toBe(""); // Task is safe, passes through
+      expect(isDelegateActive("del-task-2", tmpDir)).toBe(false);
+      // State should still be locked
+      const state = loadState("del-task-2", tmpDir);
+      expect(state.locked).toBe(true);
+    });
+
+    it("does not start delegate when session is clean", () => {
+      main(hookInput("Task", { subagent_type: "delegate", prompt: "push code" }, "del-task-3"), tmpDir);
+      expect(stdoutData).toBe(""); // allowed through
+      expect(isDelegateActive("del-task-3", tmpDir)).toBe(false);
+    });
+
+    it("Task without subagent_type passes through normally", () => {
+      lockSession("del-task-4");
+      main(hookInput("Task", { prompt: "do something" }, "del-task-4"), tmpDir);
+      expect(stdoutData).toBe(""); // Task is safe
+      expect(isDelegateActive("del-task-4", tmpDir)).toBe(false);
+    });
   });
 
   describe("lockbox:clean", () => {

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { getStatePath, loadState, saveState, deleteState, findLockedSessions } from "../src/state";
+import { getStatePath, loadState, saveState, deleteState, findLockedSessions, isDelegateActive, startDelegate, stopDelegate } from "../src/state";
 
 let tmpDir: string;
 
@@ -118,5 +118,157 @@ describe("findLockedSessions", () => {
   it("handles missing tmpDir gracefully", () => {
     const result = findLockedSessions("parent", "/nonexistent/path");
     expect(result).toEqual([]);
+  });
+});
+
+describe("delegate state", () => {
+  it("isDelegateActive returns false when no marker", () => {
+    expect(isDelegateActive("no-marker", tmpDir)).toBe(false);
+  });
+
+  it("startDelegate backs up state, clears it, and sets marker", () => {
+    saveState("del-1", {
+      locked: true,
+      locked_by: "WebFetch",
+      locked_at: "2025-01-01T00:00:00Z",
+      blocked_tools: ["git push"],
+    }, tmpDir);
+
+    startDelegate("del-1", tmpDir);
+
+    // Marker should be set
+    expect(isDelegateActive("del-1", tmpDir)).toBe(true);
+    // State should be cleared
+    const state = loadState("del-1", tmpDir);
+    expect(state.locked).toBe(false);
+    // Backup should exist with original state
+    const backupPath = path.join(tmpDir, "lockbox-state-del-1.delegate-backup.json");
+    expect(fs.existsSync(backupPath)).toBe(true);
+    const backup = JSON.parse(fs.readFileSync(backupPath, "utf-8"));
+    expect(backup.locked).toBe(true);
+    expect(backup.locked_by).toBe("WebFetch");
+    expect(backup.blocked_tools).toEqual(["git push"]);
+  });
+
+  it("startDelegate is idempotent", () => {
+    saveState("del-2", {
+      locked: true,
+      locked_by: "WebFetch",
+      locked_at: "2025-01-01T00:00:00Z",
+      blocked_tools: [],
+    }, tmpDir);
+
+    startDelegate("del-2", tmpDir);
+
+    // Modify state (simulate delegate work)
+    saveState("del-2", {
+      locked: true,
+      locked_by: "delegate-curl",
+      locked_at: "2025-06-01T00:00:00Z",
+      blocked_tools: [],
+    }, tmpDir);
+
+    // Second startDelegate should not overwrite backup
+    startDelegate("del-2", tmpDir);
+
+    const backupPath = path.join(tmpDir, "lockbox-state-del-2.delegate-backup.json");
+    const backup = JSON.parse(fs.readFileSync(backupPath, "utf-8"));
+    expect(backup.locked_by).toBe("WebFetch"); // original preserved
+  });
+
+  it("startDelegate works when no state file exists", () => {
+    startDelegate("del-3", tmpDir);
+
+    expect(isDelegateActive("del-3", tmpDir)).toBe(true);
+    const state = loadState("del-3", tmpDir);
+    expect(state.locked).toBe(false);
+  });
+
+  it("stopDelegate restores backup and cleans up", () => {
+    saveState("del-4", {
+      locked: true,
+      locked_by: "WebFetch",
+      locked_at: "2025-01-01T00:00:00Z",
+      blocked_tools: ["git push"],
+    }, tmpDir);
+
+    startDelegate("del-4", tmpDir);
+
+    // Simulate delegate accumulating its own state
+    saveState("del-4", {
+      locked: true,
+      locked_by: "delegate-taint",
+      locked_at: "2025-06-01T00:00:00Z",
+      blocked_tools: [],
+    }, tmpDir);
+
+    stopDelegate("del-4", tmpDir);
+
+    // Marker should be removed
+    expect(isDelegateActive("del-4", tmpDir)).toBe(false);
+    // State should be restored to parent's original
+    const state = loadState("del-4", tmpDir);
+    expect(state.locked).toBe(true);
+    expect(state.locked_by).toBe("WebFetch");
+    expect(state.blocked_tools).toEqual(["git push"]);
+    // Backup should be cleaned up
+    const backupPath = path.join(tmpDir, "lockbox-state-del-4.delegate-backup.json");
+    expect(fs.existsSync(backupPath)).toBe(false);
+  });
+
+  it("stopDelegate is no-op when delegate not active", () => {
+    saveState("del-5", {
+      locked: true,
+      locked_by: "WebFetch",
+      locked_at: "2025-01-01T00:00:00Z",
+      blocked_tools: [],
+    }, tmpDir);
+
+    stopDelegate("del-5", tmpDir);
+
+    // State should be unchanged
+    const state = loadState("del-5", tmpDir);
+    expect(state.locked).toBe(true);
+    expect(state.locked_by).toBe("WebFetch");
+  });
+
+  it("stopDelegate handles clean parent (no backup file)", () => {
+    // Start delegate from clean session (no state file)
+    startDelegate("del-6", tmpDir);
+
+    stopDelegate("del-6", tmpDir);
+
+    expect(isDelegateActive("del-6", tmpDir)).toBe(false);
+    // State should be clean (no backup to restore)
+    const state = loadState("del-6", tmpDir);
+    expect(state.locked).toBe(false);
+  });
+
+  it("full delegate cycle: start → delegate works → stop → parent restored", () => {
+    // Parent is locked
+    saveState("del-7", {
+      locked: true,
+      locked_by: "WebFetch",
+      locked_at: "2025-01-01T00:00:00Z",
+      blocked_tools: ["git push", "npm publish"],
+    }, tmpDir);
+
+    // Start delegate
+    startDelegate("del-7", tmpDir);
+    expect(isDelegateActive("del-7", tmpDir)).toBe(true);
+    expect(loadState("del-7", tmpDir).locked).toBe(false); // clean for delegate
+
+    // Delegate does work (state stays clean since delegate only acts, doesn't read untrusted)
+    // ... delegate executes external commands ...
+
+    // Stop delegate
+    stopDelegate("del-7", tmpDir);
+    expect(isDelegateActive("del-7", tmpDir)).toBe(false);
+
+    // Parent's lock is restored
+    const state = loadState("del-7", tmpDir);
+    expect(state.locked).toBe(true);
+    expect(state.locked_by).toBe("WebFetch");
+    expect(state.blocked_tools).toEqual(["git push", "npm publish"]);
   });
 });

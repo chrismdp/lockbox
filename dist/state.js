@@ -61,3 +61,57 @@ export function deleteState(sessionId, tmpDir) {
         // file may not exist — that's fine
     }
 }
+// --- Delegate state management ---
+function getDelegateMarkerPath(sessionId, tmpDir = os.tmpdir()) {
+    return path.join(tmpDir, `lockbox-delegate-${sessionId}.active`);
+}
+function getBackupPath(sessionId, tmpDir = os.tmpdir()) {
+    return path.join(tmpDir, `lockbox-state-${sessionId}.delegate-backup.json`);
+}
+export function isDelegateActive(sessionId, tmpDir) {
+    return fs.existsSync(getDelegateMarkerPath(sessionId, tmpDir));
+}
+export function startDelegate(sessionId, tmpDir) {
+    const marker = getDelegateMarkerPath(sessionId, tmpDir);
+    // Idempotent: if already active, don't double-backup
+    if (fs.existsSync(marker))
+        return;
+    // Backup current state (may be locked or clean)
+    const statePath = getStatePath(sessionId, tmpDir);
+    const backupPath = getBackupPath(sessionId, tmpDir);
+    try {
+        fs.copyFileSync(statePath, backupPath);
+    }
+    catch {
+        // No state file to backup — delegate starts clean anyway
+    }
+    // Clear state so delegate starts clean
+    deleteState(sessionId, tmpDir);
+    // Set marker
+    fs.writeFileSync(marker, "");
+}
+export function stopDelegate(sessionId, tmpDir) {
+    const marker = getDelegateMarkerPath(sessionId, tmpDir);
+    // Only restore if delegate was active
+    if (!fs.existsSync(marker))
+        return;
+    // Delete delegate's accumulated state
+    deleteState(sessionId, tmpDir);
+    // Restore parent's backed-up state
+    const backupPath = getBackupPath(sessionId, tmpDir);
+    const statePath = getStatePath(sessionId, tmpDir);
+    try {
+        fs.copyFileSync(backupPath, statePath);
+        fs.unlinkSync(backupPath);
+    }
+    catch {
+        // No backup — parent was clean, nothing to restore
+    }
+    // Remove marker
+    try {
+        fs.unlinkSync(marker);
+    }
+    catch {
+        // already removed
+    }
+}
