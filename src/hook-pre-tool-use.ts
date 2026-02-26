@@ -55,7 +55,7 @@ function blockTool(
     "If this command is read-only and should be safe, load /lockbox:classify to add it to ~/.claude/lockbox.json.\n" +
     "\n" +
     "If the user asks you to take this external action, load /lockbox:escape first, then spawn a Task with subagent_type 'lockbox:delegate'.\n" +
-    "IMPORTANT: Use a clear, specific description (e.g. 'Archive 14 emails and 2 threads') so the user can review what the delegate will do.\n" +
+    "The Task description is the ONLY thing the user sees before approving. Put EVERYTHING in it — prefix with 🔓, list all actions, targets, and services. Leave nothing for the prompt body. (e.g. '🔓 Archive 14 emails + Chloe Mayo thread in Gmail').\n" +
     "Do NOT use a regular Task (general-purpose, Explore, etc.) — those inherit the locked state and will also be blocked.";
 
   const output: HookOutput = { decision: "block", reason };

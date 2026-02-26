@@ -8,12 +8,13 @@ function globToRegex(glob: string): RegExp {
   return new RegExp("^" + escaped + "$");
 }
 
-/** Check if any deny entry matching Tool(pattern) would block the given argument */
-function isDenied(deny: string[], tool: string, arg: string): boolean {
-  const prefix = `${tool}(`;
-  return deny.some((d) => {
-    if (!d.startsWith(prefix) || !d.endsWith(")")) return false;
-    const inner = d.slice(prefix.length, -1);
+/** Check if any entry in the list matching Tool(pattern) would cover the given argument */
+function matchesEntry(entries: string[], tool: string, arg: string): boolean {
+  return entries.some((entry) => {
+    if (entry === tool) return true; // bare "Task" or "Bash" covers everything
+    const prefix = `${tool}(`;
+    if (!entry.startsWith(prefix) || !entry.endsWith(")")) return false;
+    const inner = entry.slice(prefix.length, -1);
     return globToRegex(inner).test(arg);
   });
 }
@@ -35,30 +36,30 @@ export function checkPermissions(settingsPath?: string): string[] {
   const warnings: string[] = [];
 
   if (
-    allow.some((p) => p === "Bash(*)" || p === "Bash") &&
-    !isDenied(deny, "Bash", "echo 'lockbox:clean'")
+    matchesEntry(allow, "Bash", "echo 'lockbox:clean'") &&
+    !matchesEntry(deny, "Bash", "echo 'lockbox:clean'")
   ) {
     warnings.push(
       "Bash(*) in allow — echo 'lockbox:clean' auto-runs without user review",
     );
   }
 
-  const taskInAllow = allow.some((p) => p === "Task" || p === "Task(*)" || p.startsWith("Task("));
-  if (
-    taskInAllow &&
-    !isDenied(deny, "Task", "lockbox:delegate")
-  ) {
+  // Only the delegate sub-agent matters — regular sub-agents inherit the parent's
+  // lock and can't take acting commands. The delegate gets clean state, so it must
+  // require user approval (approval point 1 of the escape flow).
+  const ask = (perms.ask ?? []) as string[];
+  const delegateAllowed = matchesEntry(allow, "Task", "lockbox:delegate");
+  const delegateDenied = matchesEntry(deny, "Task", "lockbox:delegate");
+  const delegateInAsk = matchesEntry(ask, "Task", "lockbox:delegate");
+
+  if (delegateAllowed && !delegateDenied && !delegateInAsk) {
     warnings.push(
-      "Task in allow — delegate sub-agent can auto-execute without user review",
+      "Task(lockbox:delegate) auto-allowed — delegate sub-agent executes without user review. Add Task(lockbox:delegate) to permissions.ask",
     );
-  } else if (!taskInAllow) {
-    const ask = (perms.ask ?? []) as string[];
-    const taskInAsk = ask.some((p) => p === "Task" || p === "Task(*)" || p.startsWith("Task("));
-    if (!taskInAsk) {
-      warnings.push(
-        "Task not in ask — sub-agent prompts may auto-approve depending on permission mode. Add Task to permissions.ask",
-      );
-    }
+  } else if (!delegateAllowed && !delegateInAsk) {
+    warnings.push(
+      "Task(lockbox:delegate) not in ask — delegate may auto-approve depending on permission mode. Add Task(lockbox:delegate) to permissions.ask",
+    );
   }
 
   return warnings;

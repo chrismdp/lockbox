@@ -60,7 +60,8 @@
       "^(sha256sum|md5sum|base64|xxd)(\\s|$)",
       "git\\s+(status|log|diff|show|branch|add|commit|stash|fetch|tag|remote)",
       "^(rm|mv|cp|mkdir)\\s",
-      "^claude\\s"
+      "^claude\\s",
+      "^(npm|npx|yarn|pnpm|bun)\\s"
     ]
   }
 }
