@@ -51,6 +51,10 @@ Open `~/.claude/settings.json` and add `WebFetch` to your global allow list:
 
 Without Lockbox, allowing unrestricted WebFetch is risky. A compromised agent could fetch attacker-controlled content and then act on it. With Lockbox, the fetch locks the session and all external actions are blocked until you explicitly clear the lock. The damage path is cut, so the fetch is safe.
 
+### 3. Check permissions
+
+Run `/lockbox:install` inside Claude Code to verify your permissions are configured correctly. Lockbox needs two specific commands to require user approval — without this, a compromised session could bypass the quarantine. See [docs/internals.md](docs/internals.md#required-permissions) for the full permission model.
+
 ## Usage
 
 Just use Claude Code the way you normally would. Lockbox stays out of the way until it matters, and you will not notice it on sessions that only do local work.
@@ -157,6 +161,7 @@ For piped or chained commands (`|`, `&`, `;`), each segment is classified indepe
 - **0.8.4** — Task permissions warning now checks deny list and clarifies that only the delegate sub-agent is the risk (regular sub-agents still propagate taint correctly).
 - **0.8.5** — Permissions check now only warns about the delegate sub-agent specifically. Regular sub-agents (Explore, Plan, general-purpose) inherit the parent lock and can't take acting commands — only the delegate gets clean state, so only it needs user approval.
 - **0.8.6** — Added npm, npx, yarn, pnpm, and bun to safe bash patterns. npm publish remains blocked (acting patterns take priority).
+- **0.8.8** — Document required permissions in README install steps and internals. Run `/lockbox:install` to check.
 - **0.8.7** — Install skill now recommends `Task(lockbox:delegate)` in ask instead of broad `Task`. Regular sub-agents don't need approval — only the delegate does.
 
 ### 0.6.x — Shell parsing and patterns

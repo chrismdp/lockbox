@@ -101,6 +101,19 @@ The delegate's taint is discarded — it does not propagate back to the parent.
 12. Session is unlocked
 ```
 
+## Required permissions
+
+Lockbox relies on two user approval points to prevent a compromised session from bypassing the quarantine. These must not be auto-allowed:
+
+| Permission | What it protects | Config |
+|---|---|---|
+| `Task(lockbox:delegate)` | User reviews the delegate prompt before a clean sub-agent executes | Must be in `ask` (or covered by `Task` in `ask`) |
+| `Bash(echo*lockbox*clean*)` | User confirms taint clearing after reviewing results | Must not be auto-allowed (add to `deny` if `Bash(*)` is in `allow`) |
+
+Regular sub-agents (Explore, Plan, general-purpose) don't need special permissions — they inherit the parent's lock state and can't take acting commands. Only the delegate gets clean state, so only it needs user approval.
+
+Run `/lockbox:install` to check and fix these automatically.
+
 ## Tamper resistance
 
 Edits to `lockbox.json` or `lockbox-state-*` files are reclassified as "acting" regardless of the tool used. This prevents a tainted session from disabling lockbox by modifying its own config or state.

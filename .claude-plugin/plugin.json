@@ -1,6 +1,6 @@
 {
   "name": "lockbox",
-  "version": "0.8.7",
+  "version": "0.8.8",
   "description": "Context quarantine — locks external actions when untrusted data enters the session",
   "author": {
     "name": "Chris Parsons",
