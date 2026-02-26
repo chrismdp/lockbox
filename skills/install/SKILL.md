@@ -21,11 +21,12 @@ Two specific commands MUST require user approval (not auto-allowed) for lockbox 
 2. Check `permissions.allow` for dangerous patterns:
    - `Bash(*)` or `Bash` — auto-allows ALL bash including `echo 'lockbox:clean'`
    - `Task`, `Task(*)`, or any `Task(...)` that covers `lockbox:delegate` — auto-allows the delegate sub-agent
-3. Check `permissions.deny` for overrides:
-   - `Bash(echo*lockbox*clean*)` — overrides Bash(*) for the specific dangerous command
-   - `Task(lockbox:delegate)` — overrides Task(*) for the delegate specifically
+3. Check `permissions.deny` for mistakes:
+   - `Bash(echo*lockbox*clean*)` in `deny` — this blocks the command entirely, even from the user. It must be in `ask` instead so the user gets prompted.
+   - `Task(lockbox:delegate)` in `deny` — same problem, blocks delegation entirely
 4. Check `permissions.ask` for required entries:
    - `Task(lockbox:delegate)` MUST be in `ask` (or covered by `Task` in `ask`) — without it, default permission modes like `acceptEdits` may auto-approve the delegate without user review
+   - `Bash(echo*lockbox*clean*)` MUST be in `ask` if `Bash(*)` is in `allow` — without it, the clean command auto-runs without user review
 5. Report findings to the user
 6. If issues found, suggest specific fixes and offer to apply them
 
@@ -34,7 +35,7 @@ Two specific commands MUST require user approval (not auto-allowed) for lockbox 
 **If `Bash(*)` is in allow:**
 This is the most common issue. The user has auto-allowed all Bash commands for convenience. Options:
 
-- **Option A (recommended)**: Keep `Bash(*)` in `allow` but move lockbox:clean to `deny`. Add to `permissions.deny`: `Bash(echo*lockbox*clean*)`
+- **Option A (recommended)**: Keep `Bash(*)` in `allow` but add lockbox:clean to `ask`. Add to `permissions.ask`: `Bash(echo*lockbox*clean*)`. The ask entry overrides allow for this specific command — you'll be prompted before the lock clears.
 - **Option B**: Remove `Bash(*)` and replace with specific patterns the user actually needs (e.g. `Bash(git *)`, `Bash(npm *)`, `Bash(node *)`)
 
 Before suggesting Option B, check what Bash patterns the user already has in their allow list to understand their workflow.

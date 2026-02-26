@@ -128,7 +128,31 @@ describe("checkPermissions", () => {
     expect(warnings.some((w) => w.includes("delegate"))).toBe(false);
   });
 
-  it("no Bash warning when deny covers lockbox:clean", () => {
+  it("no Bash warning when ask covers lockbox:clean", () => {
+    const p = writeSettings({
+      permissions: {
+        allow: ["Bash(*)"],
+        ask: ["Task", "Bash(echo*lockbox*clean*)"],
+        defaultMode: "acceptEdits",
+      },
+    });
+    const warnings = checkPermissions(p);
+    expect(warnings.some((w) => w.includes("Bash"))).toBe(false);
+  });
+
+  it("no Bash warning when ask covers with broader pattern", () => {
+    const p = writeSettings({
+      permissions: {
+        allow: ["Bash(*)"],
+        ask: ["Task", "Bash(*lockbox*)"],
+        defaultMode: "acceptEdits",
+      },
+    });
+    const warnings = checkPermissions(p);
+    expect(warnings.some((w) => w.includes("Bash"))).toBe(false);
+  });
+
+  it("warns when lockbox:clean is in deny instead of ask", () => {
     const p = writeSettings({
       permissions: {
         allow: ["Bash(*)"],
@@ -138,28 +162,16 @@ describe("checkPermissions", () => {
       },
     });
     const warnings = checkPermissions(p);
-    expect(warnings.some((w) => w.includes("Bash"))).toBe(false);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain("deny");
+    expect(warnings[0]).toContain("Move it to permissions.ask");
   });
 
-  it("no Bash warning when deny covers with broader pattern", () => {
+  it("still warns when ask has unrelated Bash pattern", () => {
     const p = writeSettings({
       permissions: {
         allow: ["Bash(*)"],
-        deny: ["Bash(*lockbox*)"],
-        ask: ["Task"],
-        defaultMode: "acceptEdits",
-      },
-    });
-    const warnings = checkPermissions(p);
-    expect(warnings.some((w) => w.includes("Bash"))).toBe(false);
-  });
-
-  it("still warns when deny has unrelated Bash pattern", () => {
-    const p = writeSettings({
-      permissions: {
-        allow: ["Bash(*)"],
-        deny: ["Bash(rm -rf*)"],
-        ask: ["Task"],
+        ask: ["Task", "Bash(rm -rf*)"],
         defaultMode: "acceptEdits",
       },
     });

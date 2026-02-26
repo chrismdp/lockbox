@@ -33,21 +33,24 @@ export function checkPermissions(settingsPath?: string): string[] {
 
   const allow = (perms.allow ?? []) as string[];
   const deny = (perms.deny ?? []) as string[];
+  const ask = (perms.ask ?? []) as string[];
   const warnings: string[] = [];
 
-  if (
-    matchesEntry(allow, "Bash", "echo 'lockbox:clean'") &&
-    !matchesEntry(deny, "Bash", "echo 'lockbox:clean'")
-  ) {
-    warnings.push(
-      "Bash(*) in allow — echo 'lockbox:clean' auto-runs without user review",
-    );
+  if (matchesEntry(allow, "Bash", "echo 'lockbox:clean'")) {
+    if (matchesEntry(deny, "Bash", "echo 'lockbox:clean'")) {
+      warnings.push(
+        "Bash(echo*lockbox*clean*) in deny — this blocks the command entirely, even from you. Move it to permissions.ask so you get prompted instead",
+      );
+    } else if (!matchesEntry(ask, "Bash", "echo 'lockbox:clean'")) {
+      warnings.push(
+        "Bash(*) in allow — echo 'lockbox:clean' auto-runs without user review. Add Bash(echo*lockbox*clean*) to permissions.ask",
+      );
+    }
   }
 
   // Only the delegate sub-agent matters — regular sub-agents inherit the parent's
   // lock and can't take acting commands. The delegate gets clean state, so it must
   // require user approval (approval point 1 of the escape flow).
-  const ask = (perms.ask ?? []) as string[];
   const delegateAllowed = matchesEntry(allow, "Task", "lockbox:delegate");
   const delegateDenied = matchesEntry(deny, "Task", "lockbox:delegate");
   const delegateInAsk = matchesEntry(ask, "Task", "lockbox:delegate");

@@ -108,7 +108,7 @@ Lockbox relies on two user approval points to prevent a compromised session from
 | Permission | What it protects | Config |
 |---|---|---|
 | `Task(lockbox:delegate)` | User reviews the delegate prompt before a clean sub-agent executes | Must be in `ask` (or covered by `Task` in `ask`) |
-| `Bash(echo*lockbox*clean*)` | User confirms taint clearing after reviewing results | Must not be auto-allowed (add to `deny` if `Bash(*)` is in `allow`) |
+| `Bash(echo*lockbox*clean*)` | User confirms taint clearing after reviewing results | Must be in `ask` if `Bash(*)` is in `allow` (not `deny` — that blocks it entirely) |
 
 Regular sub-agents (Explore, Plan, general-purpose) don't need special permissions — they inherit the parent's lock state and can't take acting commands. Only the delegate gets clean state, so only it needs user approval.
 
