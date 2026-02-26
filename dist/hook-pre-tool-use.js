@@ -37,7 +37,9 @@ function blockTool(state, toolName, toolInput, sessionId, tmpDir) {
         "\n" +
         "If the user asks you to take this external action, load /lockbox:escape first, then spawn a Task with subagent_type 'lockbox:delegate'.\n" +
         "The Task description is the ONLY thing the user sees before approving. Put EVERYTHING in it — prefix with 🔓, list all actions, targets, and services. Leave nothing for the prompt body. (e.g. '🔓 Archive 14 emails + Chloe Mayo thread in Gmail').\n" +
-        "Do NOT use a regular Task (general-purpose, Explore, etc.) — those inherit the locked state and will also be blocked.";
+        "Do NOT use a regular Task (general-purpose, Explore, etc.) — those inherit the locked state and will also be blocked.\n" +
+        "\n" +
+        "Last resort: if delegation keeps failing and there is no other way forward, use EnterPlanMode to plan the approach. Warning: plan mode loses your current thread of context, so only use it when you are truly stuck.";
     const output = { decision: "block", reason };
     process.stdout.write(JSON.stringify(output));
 }

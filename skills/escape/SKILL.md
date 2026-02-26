@@ -78,6 +78,10 @@ When you spawn a Task with `subagent_type: "lockbox:delegate"`, lockbox:
 4. When the delegate finishes, lockbox restores the parent's locked state
 5. The delegate's taint does NOT propagate back to the parent
 
+## Last resort: Plan mode
+
+If delegation keeps failing and there is no other way forward, use `EnterPlanMode` to step back and plan the approach. **Warning:** plan mode loses your current thread of context, so only use it when you are truly stuck — not as a first option.
+
 ## User setup
 
 For smooth delegation, users should set the Task tool to "ask" permission in Claude Code settings. This ensures they review every delegate prompt before execution.
