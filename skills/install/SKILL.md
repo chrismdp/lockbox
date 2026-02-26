@@ -10,9 +10,9 @@ Check and fix Claude Code permissions so lockbox can enforce its quarantine.
 
 ## What lockbox needs
 
-Two tools MUST require user approval (not auto-allowed) for lockbox to work:
+Two specific commands MUST require user approval (not auto-allowed) for lockbox to work:
 
-1. **Task** — user reviews sub-agent prompts before execution (prevents a compromised agent from silently delegating external actions)
+1. **Task(lockbox:delegate)** — user reviews the delegate sub-agent prompt before execution (prevents a compromised agent from silently delegating external actions). Regular sub-agents (Explore, Plan, general-purpose) are fine to auto-allow — they inherit the parent's lock and can't take acting commands.
 2. **Bash: echo 'lockbox:clean'** — user confirms taint clearing after reviewing sub-agent results (prevents silent lock bypass)
 
 ## Steps
@@ -20,11 +20,14 @@ Two tools MUST require user approval (not auto-allowed) for lockbox to work:
 1. Read `~/.claude/settings.json`
 2. Check `permissions.allow` for dangerous patterns:
    - `Bash(*)` or `Bash` — auto-allows ALL bash including `echo 'lockbox:clean'`
-   - `Task`, `Task(*)`, or any `Task(...)` — auto-allows sub-agent creation
-3. Check `permissions.ask` for required entries:
-   - `Task` MUST be in `ask` — without it, default permission modes like `acceptEdits` may auto-approve sub-agent prompts without user review
-4. Report findings to the user
-5. If issues found, suggest specific fixes and offer to apply them
+   - `Task`, `Task(*)`, or any `Task(...)` that covers `lockbox:delegate` — auto-allows the delegate sub-agent
+3. Check `permissions.deny` for overrides:
+   - `Bash(echo*lockbox*clean*)` — overrides Bash(*) for the specific dangerous command
+   - `Task(lockbox:delegate)` — overrides Task(*) for the delegate specifically
+4. Check `permissions.ask` for required entries:
+   - `Task(lockbox:delegate)` MUST be in `ask` (or covered by `Task` in `ask`) — without it, default permission modes like `acceptEdits` may auto-approve the delegate without user review
+5. Report findings to the user
+6. If issues found, suggest specific fixes and offer to apply them
 
 ## Fix strategies
 
@@ -36,11 +39,14 @@ This is the most common issue. The user has auto-allowed all Bash commands for c
 
 Before suggesting Option B, check what Bash patterns the user already has in their allow list to understand their workflow.
 
-**If `Task` is in allow:**
-Remove it from `allow` and add `Task` to `ask` instead.
+**If `Task(*)` or `Task` is in allow:**
+The delegate sub-agent would auto-execute without user review. Options:
 
-**If `Task` is not in `ask`:**
-This is the most common oversight. Default permission modes like `acceptEdits` may auto-approve Task calls without prompting the user. Add `Task` to `permissions.ask` so sub-agent prompts always require explicit approval.
+- **Option A (recommended)**: Keep `Task(*)` in `allow` (so regular sub-agents work smoothly) and add `Task(lockbox:delegate)` to `permissions.ask`. The ask entry overrides allow for the delegate specifically.
+- **Option B**: Move `Task` from `allow` to `ask` entirely. This means ALL sub-agents require approval, which is safer but more interruptions.
+
+**If `Task(lockbox:delegate)` is not in `ask`:**
+This is the most common oversight. Default permission modes like `acceptEdits` may auto-approve the delegate without prompting the user. Add `Task(lockbox:delegate)` to `permissions.ask` so the delegate always requires explicit approval.
 
 ## Applying changes
 
