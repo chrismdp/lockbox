@@ -23,7 +23,9 @@ If an acting step depends on data from an unsafe step, that's a two-cycle plan. 
 
 ## Fetching external data
 
-**Always use Task subagents for fetches** (WebFetch, curl, wget). Never call these directly in the main session — parallel direct calls race on the lock state. Launch parallel Task agents instead; each gets its own session. When results enter your context, the session locks naturally.
+**Always use Task subagents for fetches** (WebFetch, curl, wget). Never call these directly in the main session — parallel direct calls race on the lock state. Launch parallel Task agents instead; each gets its own session.
+
+Subagent taint propagates to the parent: when a Task or TaskOutput result returns and any subagent session is locked, the parent session locks too. This means you can **do all your safe and acting work first**, then launch subagent fetches last — the parent stays clean until the results come back. Structure your work: act first, fetch later.
 
 ## How to write a lockbox plan
 
