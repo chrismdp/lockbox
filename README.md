@@ -154,6 +154,7 @@ For piped or chained commands (`|`, `&`, `;`), each segment is classified indepe
 - **0.8.1** — Delegate sub-agent with independent lockbox state. Locked sessions can now spawn a clean agent to execute external actions with user approval, without unlocking the parent session. Two approval points: reviewing the delegate prompt, then confirming `echo 'lockbox:clean'` after reviewing results.
 - **0.8.2** — Fixed delegate namespace mismatch and improved block messages. Block messages now instruct the agent to stop and inform the user before attempting workarounds.
 - **0.8.3** — Permissions check now accounts for the deny list. Previously warned about `Bash(*)` in allow even when deny patterns covered the dangerous command (`echo 'lockbox:clean'`).
+- **0.8.4** — Task permissions warning now checks deny list and clarifies that only the delegate sub-agent is the risk (regular sub-agents still propagate taint correctly).
 
 ### 0.6.x — Shell parsing and patterns
 

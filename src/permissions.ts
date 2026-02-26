@@ -8,11 +8,13 @@ function globToRegex(glob: string): RegExp {
   return new RegExp("^" + escaped + "$");
 }
 
-/** Check if any deny entry with Bash(...) would block the given command string */
-function bashDenied(deny: string[], cmd: string): boolean {
+/** Check if any deny entry matching Tool(pattern) would block the given argument */
+function isDenied(deny: string[], tool: string, arg: string): boolean {
+  const prefix = `${tool}(`;
   return deny.some((d) => {
-    const m = d.match(/^Bash\((.+)\)$/);
-    return m && globToRegex(m[1]).test(cmd);
+    if (!d.startsWith(prefix) || !d.endsWith(")")) return false;
+    const inner = d.slice(prefix.length, -1);
+    return globToRegex(inner).test(arg);
   });
 }
 
@@ -34,18 +36,22 @@ export function checkPermissions(settingsPath?: string): string[] {
 
   if (
     allow.some((p) => p === "Bash(*)" || p === "Bash") &&
-    !bashDenied(deny, "echo 'lockbox:clean'")
+    !isDenied(deny, "Bash", "echo 'lockbox:clean'")
   ) {
     warnings.push(
       "Bash(*) in allow — echo 'lockbox:clean' auto-runs without user review",
     );
   }
 
-  if (allow.some((p) => p === "Task" || p === "Task(*)" || p.startsWith("Task("))) {
+  const taskInAllow = allow.some((p) => p === "Task" || p === "Task(*)" || p.startsWith("Task("));
+  if (
+    taskInAllow &&
+    !isDenied(deny, "Task", "lockbox:delegate")
+  ) {
     warnings.push(
-      "Task in allow — sub-agent prompts execute without user review",
+      "Task in allow — delegate sub-agent can auto-execute without user review",
     );
-  } else {
+  } else if (!taskInAllow) {
     const ask = (perms.ask ?? []) as string[];
     const taskInAsk = ask.some((p) => p === "Task" || p === "Task(*)" || p.startsWith("Task("));
     if (!taskInAsk) {

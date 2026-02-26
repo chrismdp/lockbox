@@ -36,7 +36,7 @@ function blockTool(state, toolName, toolInput, sessionId, tmpDir) {
         "If this command is read-only and should be safe, load /lockbox:classify to add it to ~/.claude/lockbox.json.\n" +
         "\n" +
         "If the user asks you to take this external action, load /lockbox:escape first, then spawn a Task with subagent_type 'lockbox:delegate'.\n" +
-        "IMPORTANT: Use a clear, specific description (e.g. 'Archive 14 emails and 2 threads') so the user can review what the delegate will do.\n" +
+        "The Task description is the ONLY thing the user sees — prefix with 🔓 and describe the exact actions (e.g. '🔓 Archive 14 emails and 2 Gmail threads').\n" +
         "Do NOT use a regular Task (general-purpose, Explore, etc.) — those inherit the locked state and will also be blocked.";
     const output = { decision: "block", reason };
     process.stdout.write(JSON.stringify(output));

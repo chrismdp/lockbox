@@ -45,7 +45,7 @@ describe("checkPermissions", () => {
       permissions: { allow: ["Task"], defaultMode: "acceptEdits" },
     });
     const warnings = checkPermissions(p);
-    expect(warnings.some((w) => w.includes("sub-agent") && w.includes("execute without"))).toBe(true);
+    expect(warnings.some((w) => w.includes("delegate") && w.includes("auto-execute"))).toBe(true);
   });
 
   it("warns when Task(*) is in allow", () => {
@@ -53,7 +53,7 @@ describe("checkPermissions", () => {
       permissions: { allow: ["Task(*)"], defaultMode: "acceptEdits" },
     });
     const warnings = checkPermissions(p);
-    expect(warnings.some((w) => w.includes("Task") && w.includes("execute without"))).toBe(true);
+    expect(warnings.some((w) => w.includes("delegate") && w.includes("auto-execute"))).toBe(true);
   });
 
   it("warns on both Bash(*) and Task in allow", () => {
@@ -62,6 +62,42 @@ describe("checkPermissions", () => {
     });
     const warnings = checkPermissions(p);
     expect(warnings).toHaveLength(2);
+  });
+
+  it("no Task warning when deny covers lockbox:delegate", () => {
+    const p = writeSettings({
+      permissions: {
+        allow: ["Task(*)"],
+        deny: ["Task(lockbox:delegate)"],
+        defaultMode: "acceptEdits",
+      },
+    });
+    const warnings = checkPermissions(p);
+    expect(warnings.some((w) => w.includes("delegate"))).toBe(false);
+  });
+
+  it("no Task warning when deny covers with broader pattern", () => {
+    const p = writeSettings({
+      permissions: {
+        allow: ["Task(*)"],
+        deny: ["Task(*delegate*)"],
+        defaultMode: "acceptEdits",
+      },
+    });
+    const warnings = checkPermissions(p);
+    expect(warnings.some((w) => w.includes("delegate"))).toBe(false);
+  });
+
+  it("still warns when deny has unrelated Task pattern", () => {
+    const p = writeSettings({
+      permissions: {
+        allow: ["Task(*)"],
+        deny: ["Task(some-other-agent)"],
+        defaultMode: "acceptEdits",
+      },
+    });
+    const warnings = checkPermissions(p);
+    expect(warnings.some((w) => w.includes("delegate"))).toBe(true);
   });
 
   it("warns when Task is not in ask", () => {
