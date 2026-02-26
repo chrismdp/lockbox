@@ -157,6 +157,7 @@ For piped or chained commands (`|`, `&`, `;`), each segment is classified indepe
 - **0.8.4** — Task permissions warning now checks deny list and clarifies that only the delegate sub-agent is the risk (regular sub-agents still propagate taint correctly).
 - **0.8.5** — Permissions check now only warns about the delegate sub-agent specifically. Regular sub-agents (Explore, Plan, general-purpose) inherit the parent lock and can't take acting commands — only the delegate gets clean state, so only it needs user approval.
 - **0.8.6** — Added npm, npx, yarn, pnpm, and bun to safe bash patterns. npm publish remains blocked (acting patterns take priority).
+- **0.8.7** — Install skill now recommends `Task(lockbox:delegate)` in ask instead of broad `Task`. Regular sub-agents don't need approval — only the delegate does.
 
 ### 0.6.x — Shell parsing and patterns
 
