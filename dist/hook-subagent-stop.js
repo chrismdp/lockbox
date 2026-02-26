@@ -9,7 +9,7 @@ export function main(stdinData, tmpDir) {
     catch {
         return;
     }
-    if (input.agent_type !== "delegate")
+    if (input.agent_type !== "delegate" && input.agent_type !== "lockbox:delegate")
         return;
     const sessionId = input.session_id ?? "unknown";
     stopDelegate(sessionId, tmpDir);

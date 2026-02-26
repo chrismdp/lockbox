@@ -178,6 +178,15 @@ describe("hook-pre-tool-use", () => {
       expect(state.locked).toBe(false);
     });
 
+    it("starts delegate when Task has subagent_type 'lockbox:delegate' (namespaced)", () => {
+      lockSession("del-task-ns");
+      main(hookInput("Task", { subagent_type: "lockbox:delegate", prompt: "push code" }, "del-task-ns"), tmpDir);
+      expect(stdoutData).toBe(""); // allowed through
+      expect(isDelegateActive("del-task-ns", tmpDir)).toBe(true);
+      const state = loadState("del-task-ns", tmpDir);
+      expect(state.locked).toBe(false);
+    });
+
     it("does not start delegate for non-delegate Task", () => {
       lockSession("del-task-2");
       main(hookInput("Task", { subagent_type: "general-purpose", prompt: "research" }, "del-task-2"), tmpDir);

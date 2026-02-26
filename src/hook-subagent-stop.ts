@@ -16,7 +16,7 @@ export function main(stdinData?: string, tmpDir?: string): void {
     return;
   }
 
-  if (input.agent_type !== "delegate") return;
+  if (input.agent_type !== "delegate" && input.agent_type !== "lockbox:delegate") return;
 
   const sessionId = input.session_id ?? "unknown";
   stopDelegate(sessionId, tmpDir);

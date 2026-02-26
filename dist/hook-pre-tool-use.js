@@ -35,7 +35,7 @@ function blockTool(state, toolName, toolInput, sessionId, tmpDir) {
         "\n" +
         "If this command is read-only and should be safe, load /lockbox:classify to add it to ~/.claude/lockbox.json.\n" +
         "\n" +
-        "If the user asks you to take this external action, spawn a Task with subagent_type 'delegate'. Load /lockbox:escape for detailed guidance.";
+        "If the user asks you to take this external action, spawn a Task with subagent_type 'lockbox:delegate'. Load /lockbox:escape for detailed guidance.";
     const output = { decision: "block", reason };
     process.stdout.write(JSON.stringify(output));
 }
@@ -60,7 +60,9 @@ export function main(stdinData, tmpDir) {
     }
     // Fallback delegate detection: if SubagentStart hooks don't fire,
     // catch delegate Task calls here and prepare clean state.
-    if (toolName === "Task" && String(toolInput.subagent_type ?? "") === "delegate") {
+    // Accept both plugin-local "delegate" and namespaced "lockbox:delegate".
+    const subType = String(toolInput.subagent_type ?? "");
+    if (toolName === "Task" && (subType === "delegate" || subType === "lockbox:delegate")) {
         const preState = loadState(sessionId, tmpDir);
         if (preState.locked) {
             startDelegate(sessionId, tmpDir); // idempotent via marker

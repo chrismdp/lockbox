@@ -42,6 +42,21 @@ describe("hook-subagent-start", () => {
     expect(backup.locked_by).toBe("WebFetch");
   });
 
+  it("starts delegate for lockbox:delegate agent (namespaced)", () => {
+    saveState("sess-ns", {
+      locked: true,
+      locked_by: "WebFetch",
+      locked_at: "2025-01-01T00:00:00Z",
+      blocked_tools: [],
+    }, tmpDir);
+
+    main(hookInput("lockbox:delegate", "sess-ns"), tmpDir);
+
+    expect(isDelegateActive("sess-ns", tmpDir)).toBe(true);
+    const state = loadState("sess-ns", tmpDir);
+    expect(state.locked).toBe(false);
+  });
+
   it("ignores non-delegate agents", () => {
     saveState("sess-2", {
       locked: true,
