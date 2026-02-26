@@ -1,11 +1,9 @@
 import * as fs from "fs";
 import { HookInput, HookOutput, LockboxState } from "./types.js";
-import { loadState, saveState, deleteState, startDelegate } from "./state.js";
+import { loadState, saveState, startDelegate } from "./state.js";
 import { loadConfig } from "./config.js";
 import { classifyTool, toolDescription } from "./classify.js";
 import { checkPermissions } from "./permissions.js";
-
-const LOCKBOX_CLEAN_RE = /^\s*echo\s+(['"]?)lockbox:clean\1\s*$/;
 
 function lockSession(
   state: LockboxState,
@@ -76,14 +74,6 @@ export function main(stdinData?: string, tmpDir?: string): void {
   const sessionId = hookInput.session_id ?? "unknown";
   const toolName = hookInput.tool_name ?? "";
   const toolInput = hookInput.tool_input ?? {};
-
-  if (toolName === "Bash") {
-    const command = (toolInput.command as string) ?? "";
-    if (LOCKBOX_CLEAN_RE.test(command)) {
-      deleteState(sessionId, tmpDir);
-      return;
-    }
-  }
 
   // Fallback delegate detection: if SubagentStart hooks don't fire,
   // catch delegate Task calls here and prepare clean state.

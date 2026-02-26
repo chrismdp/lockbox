@@ -20,8 +20,7 @@ Lockbox detects when untrusted data enters your Claude Code session and blocks e
 2. **You keep working normally** because file reads, writes, edits, searches, and local Bash all still work
 3. **You try to take an external action** (git push, send email, deploy) and Lockbox blocks it
 4. **You ask the agent to delegate** and it spawns a clean sub-agent with the concrete action
-5. **You review the delegation prompt** (approval point 1) and the sub-agent executes in a clean context
-6. **You review the results** and run `echo 'lockbox:clean'` to clear the lock (approval point 2)
+5. **You review the delegation prompt** and the sub-agent executes in a clean context
 
 The harness detects the lock, not the agent. By the time untrusted data enters the conversation, the agent may already be compromised. Lockbox tracks what the agent has been exposed to and restricts what it can do next.
 
@@ -53,7 +52,7 @@ Without Lockbox, allowing unrestricted WebFetch is risky. A compromised agent co
 
 ### 3. Check permissions
 
-Run `/lockbox:install` inside Claude Code to verify your permissions are configured correctly. Lockbox needs two specific commands to require user approval — without this, a compromised session could bypass the quarantine. See [docs/internals.md](docs/internals.md#required-permissions) for the full permission model.
+Run `/lockbox:install` inside Claude Code to verify your permissions are configured correctly. Lockbox needs `Task(lockbox:delegate)` to require user approval — without this, a compromised session could bypass the quarantine. See [docs/internals.md](docs/internals.md#required-permissions) for the full permission model.
 
 ## Usage
 
@@ -69,7 +68,7 @@ In practice this means delegation happens automatically for tasks that mix exter
 
 ### When Lockbox blocks an action
 
-When a tool is blocked, the agent stops and tells you what happened. If you ask it to proceed, it spawns a **delegate sub-agent** — a clean agent that runs outside the locked session's state. You review the delegate's instructions before it runs (approval point 1), then review the results and clear the lock (approval point 2).
+When a tool is blocked, the agent stops and tells you what happened. If you ask it to proceed, it spawns a **delegate sub-agent** — a clean agent that runs outside the locked session's state. You review the delegate's instructions before it runs. The session stays locked — use delegation for each external action, or start a new session.
 
 ## How it works
 
@@ -98,7 +97,7 @@ Detection happens at the harness level through a `PreToolUse` hook. The hook fir
 
 When a tool is blocked, the agent can delegate the action to a clean sub-agent. The delegate runs with independent lockbox state — it starts clean, executes the action, and its taint is discarded when it finishes. The parent's lock is restored automatically.
 
-Two user approval points protect this flow: reviewing the delegate's instructions before it runs, and confirming `echo 'lockbox:clean'` after reviewing the results.
+Once locked, a session stays locked. Delegate for each external action, or start a new session. The user reviews the delegate's instructions before it runs — this is the single approval point protecting the flow.
 
 See [docs/internals.md](docs/internals.md) for the full technical details on hooks, state management, taint propagation, sub-agent session sharing, and the backup/restore mechanism.
 
@@ -153,17 +152,20 @@ For piped or chained commands (`|`, `&`, `;`), each segment is classified indepe
 
 ## Changelog
 
+### 0.9.x — Simplification
+
+- **0.9.1** — Removed `echo 'lockbox:clean'` mechanism. Once locked, a session stays locked — delegate for external actions or start a new session. Single approval point (delegate prompt review). Removed Bash permission checks from install skill and permissions checker.
+- **0.9.0** — Fix lockbox:clean permission model: use `ask` not `deny`. Block message suggests Plan mode as last resort. Added install step and internals docs for required permissions.
+
 ### 0.8.x — Delegate sub-agent
 
-- **0.8.1** — Delegate sub-agent with independent lockbox state. Locked sessions can now spawn a clean agent to execute external actions with user approval, without unlocking the parent session. Two approval points: reviewing the delegate prompt, then confirming `echo 'lockbox:clean'` after reviewing results.
-- **0.8.2** — Fixed delegate namespace mismatch and improved block messages. Block messages now instruct the agent to stop and inform the user before attempting workarounds.
-- **0.8.3** — Permissions check now accounts for the deny list. Previously warned about `Bash(*)` in allow even when deny patterns covered the dangerous command (`echo 'lockbox:clean'`).
-- **0.8.4** — Task permissions warning now checks deny list and clarifies that only the delegate sub-agent is the risk (regular sub-agents still propagate taint correctly).
-- **0.8.5** — Permissions check now only warns about the delegate sub-agent specifically. Regular sub-agents (Explore, Plan, general-purpose) inherit the parent lock and can't take acting commands — only the delegate gets clean state, so only it needs user approval.
-- **0.8.6** — Added npm, npx, yarn, pnpm, and bun to safe bash patterns. npm publish remains blocked (acting patterns take priority).
-- **0.9.0** — Fix lockbox:clean permission model: use `ask` not `deny`. Deny blocks the command entirely (even from the user); ask prompts for approval. Permissions checker now warns if lockbox:clean is in deny. Block message suggests Plan mode as last resort. Added install step and internals docs for required permissions.
-
 - **0.8.7** — Install skill now recommends `Task(lockbox:delegate)` in ask instead of broad `Task`. Regular sub-agents don't need approval — only the delegate does.
+- **0.8.6** — Added npm, npx, yarn, pnpm, and bun to safe bash patterns. npm publish remains blocked (acting patterns take priority).
+- **0.8.5** — Permissions check now only warns about the delegate sub-agent specifically.
+- **0.8.4** — Task permissions warning now checks deny list.
+- **0.8.3** — Permissions check now accounts for the deny list.
+- **0.8.2** — Fixed delegate namespace mismatch and improved block messages.
+- **0.8.1** — Delegate sub-agent with independent lockbox state.
 
 ### 0.6.x — Shell parsing and patterns
 

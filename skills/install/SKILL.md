@@ -10,35 +10,23 @@ Check and fix Claude Code permissions so lockbox can enforce its quarantine.
 
 ## What lockbox needs
 
-Two specific commands MUST require user approval (not auto-allowed) for lockbox to work:
+One specific command MUST require user approval (not auto-allowed) for lockbox to work:
 
-1. **Task(lockbox:delegate)** — user reviews the delegate sub-agent prompt before execution (prevents a compromised agent from silently delegating external actions). Regular sub-agents (Explore, Plan, general-purpose) are fine to auto-allow — they inherit the parent's lock and can't take acting commands.
-2. **Bash: echo 'lockbox:clean'** — user confirms taint clearing after reviewing sub-agent results (prevents silent lock bypass)
+- **Task(lockbox:delegate)** — user reviews the delegate sub-agent prompt before execution (prevents a compromised agent from silently delegating external actions). Regular sub-agents (Explore, Plan, general-purpose) are fine to auto-allow — they inherit the parent's lock and can't take acting commands.
 
 ## Steps
 
 1. Read `~/.claude/settings.json`
 2. Check `permissions.allow` for dangerous patterns:
-   - `Bash(*)` or `Bash` — auto-allows ALL bash including `echo 'lockbox:clean'`
    - `Task`, `Task(*)`, or any `Task(...)` that covers `lockbox:delegate` — auto-allows the delegate sub-agent
 3. Check `permissions.deny` for mistakes:
-   - `Bash(echo*lockbox*clean*)` in `deny` — this blocks the command entirely, even from the user. It must be in `ask` instead so the user gets prompted.
-   - `Task(lockbox:delegate)` in `deny` — same problem, blocks delegation entirely
+   - `Task(lockbox:delegate)` in `deny` — this blocks delegation entirely. It must be in `ask` instead so the user gets prompted.
 4. Check `permissions.ask` for required entries:
    - `Task(lockbox:delegate)` MUST be in `ask` (or covered by `Task` in `ask`) — without it, default permission modes like `acceptEdits` may auto-approve the delegate without user review
-   - `Bash(echo*lockbox*clean*)` MUST be in `ask` if `Bash(*)` is in `allow` — without it, the clean command auto-runs without user review
 5. Report findings to the user
 6. If issues found, suggest specific fixes and offer to apply them
 
-## Fix strategies
-
-**If `Bash(*)` is in allow:**
-This is the most common issue. The user has auto-allowed all Bash commands for convenience. Options:
-
-- **Option A (recommended)**: Keep `Bash(*)` in `allow` but add lockbox:clean to `ask`. Add to `permissions.ask`: `Bash(echo*lockbox*clean*)`. The ask entry overrides allow for this specific command — you'll be prompted before the lock clears.
-- **Option B**: Remove `Bash(*)` and replace with specific patterns the user actually needs (e.g. `Bash(git *)`, `Bash(npm *)`, `Bash(node *)`)
-
-Before suggesting Option B, check what Bash patterns the user already has in their allow list to understand their workflow.
+## Fix strategy
 
 **If `Task(*)` or `Task` is in allow:**
 The delegate sub-agent would auto-execute without user review. Options:

@@ -31,7 +31,6 @@ Session state lives in `/tmp/lockbox-state-{session_id}.json`:
 
 ```
 tool call arrives
-  |-- echo 'lockbox:clean'?  --> delete state, allow
   |-- Task(subagent_type=delegate)?  --> start delegate, allow
   |-- classify tool
   |     |-- safe                      --> allow
@@ -92,23 +91,22 @@ The delegate's taint is discarded — it does not propagate back to the parent.
  3. Block message: STOP, tell user, use delegate if asked
  4. User asks agent to push
  5. Agent spawns Task(subagent_type="delegate") with concrete instructions
- 6. User reviews and approves the Task prompt        <-- approval point 1
+ 6. User reviews and approves the Task prompt        <-- approval point
  7. Lockbox backs up state, clears for delegate
  8. Delegate runs clean, executes git push
  9. Delegate finishes, lockbox restores parent's lock
 10. Agent reports results to user
-11. User runs echo 'lockbox:clean'                   <-- approval point 2
-12. Session is unlocked
 ```
+
+The session stays locked after delegation. Once untrusted data enters a session, it stays tainted. Delegate for each external action, or start a new session.
 
 ## Required permissions
 
-Lockbox relies on two user approval points to prevent a compromised session from bypassing the quarantine. These must not be auto-allowed:
+Lockbox relies on one user approval point to prevent a compromised session from bypassing the quarantine:
 
 | Permission | What it protects | Config |
 |---|---|---|
 | `Task(lockbox:delegate)` | User reviews the delegate prompt before a clean sub-agent executes | Must be in `ask` (or covered by `Task` in `ask`) |
-| `Bash(echo*lockbox*clean*)` | User confirms taint clearing after reviewing results | Must be in `ask` if `Bash(*)` is in `allow` (not `deny` — that blocks it entirely) |
 
 Regular sub-agents (Explore, Plan, general-purpose) don't need special permissions — they inherit the parent's lock state and can't take acting commands. Only the delegate gets clean state, so only it needs user approval.
 

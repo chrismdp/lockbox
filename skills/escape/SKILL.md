@@ -25,7 +25,6 @@ When your session is locked by lockbox (external actions blocked due to untruste
 2. **Prepare a Task prompt** with all concrete data the delegate needs — exact email bodies, recipients, branch names, URLs, file contents. The delegate has NO access to the parent context.
 3. **Spawn the delegate** using the Task tool with `subagent_type: "lockbox:delegate"`. Lockbox automatically gives the delegate clean state so it can execute external actions.
 4. **Report the delegate's results** to the user — show what happened, what succeeded, any errors.
-5. **If results are safe**, run: `echo 'lockbox:clean'` — the user approves this to clear the lock.
 
 ## Task title is critical
 
@@ -56,19 +55,6 @@ The delegate starts with a blank context. Your prompt must be:
 Bad: "Send the email we drafted to the client"
 Good: "Send an email to alice@example.com with subject 'Q3 Report' and body: ..."
 
-## Approval flow
-
-The user sees the Task title and approves or denies. After the delegate runs:
-
-1. **Report results** — tell the user what succeeded and what failed
-2. **If safe**, run: `echo 'lockbox:clean'` — user approves to clear the lock
-
-You MUST report delegate results to the user before suggesting `echo 'lockbox:clean'`. The user needs to verify the actions succeeded before clearing the taint.
-
-## When NOT to clean
-
-Do NOT run `echo 'lockbox:clean'` if the delegate returned untrusted content into the parent context. Only clean when the delegate performed actions (sent, pushed, posted) and you're reporting success/failure — not when you're ingesting new external data.
-
 ## How it works
 
 When you spawn a Task with `subagent_type: "lockbox:delegate"`, lockbox:
@@ -78,10 +64,8 @@ When you spawn a Task with `subagent_type: "lockbox:delegate"`, lockbox:
 4. When the delegate finishes, lockbox restores the parent's locked state
 5. The delegate's taint does NOT propagate back to the parent
 
+The session stays locked after delegation. This is by design — once untrusted data enters a session, it stays tainted. Use delegation for each external action, or start a new session.
+
 ## Last resort: Plan mode
 
 If delegation keeps failing and there is no other way forward, use `EnterPlanMode` to step back and plan the approach. **Warning:** plan mode loses your current thread of context, so only use it when you are truly stuck — not as a first option.
-
-## User setup
-
-For smooth delegation, users should set the Task tool to "ask" permission in Claude Code settings. This ensures they review every delegate prompt before execution.

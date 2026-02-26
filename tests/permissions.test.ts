@@ -21,25 +21,6 @@ function writeSettings(settings: Record<string, unknown>): string {
 }
 
 describe("checkPermissions", () => {
-  it("warns when Bash(*) is in allow", () => {
-    const p = writeSettings({
-      permissions: { allow: ["Bash(*)"], ask: ["Task"], defaultMode: "acceptEdits" },
-    });
-    const warnings = checkPermissions(p);
-    expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toContain("Bash(*)");
-    expect(warnings[0]).toContain("lockbox:clean");
-  });
-
-  it("warns when bare Bash is in allow", () => {
-    const p = writeSettings({
-      permissions: { allow: ["Bash"], ask: ["Task"], defaultMode: "acceptEdits" },
-    });
-    const warnings = checkPermissions(p);
-    expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toContain("Bash");
-  });
-
   // --- Delegate sub-agent permissions ---
   // Only lockbox:delegate matters. Regular sub-agents inherit the parent lock.
 
@@ -108,12 +89,13 @@ describe("checkPermissions", () => {
     expect(warnings[0]).toContain("not in ask");
   });
 
-  it("warns on both Bash(*) and delegate auto-allowed", () => {
+  it("warns when delegate auto-allowed with broad permissions", () => {
     const p = writeSettings({
       permissions: { allow: ["Bash(*)", "Task(*)"], defaultMode: "acceptEdits" },
     });
     const warnings = checkPermissions(p);
-    expect(warnings).toHaveLength(2);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain("delegate");
   });
 
   it("no warning when non-delegate Task agents are in allow", () => {
@@ -126,57 +108,6 @@ describe("checkPermissions", () => {
     });
     const warnings = checkPermissions(p);
     expect(warnings.some((w) => w.includes("delegate"))).toBe(false);
-  });
-
-  it("no Bash warning when ask covers lockbox:clean", () => {
-    const p = writeSettings({
-      permissions: {
-        allow: ["Bash(*)"],
-        ask: ["Task", "Bash(echo*lockbox*clean*)"],
-        defaultMode: "acceptEdits",
-      },
-    });
-    const warnings = checkPermissions(p);
-    expect(warnings.some((w) => w.includes("Bash"))).toBe(false);
-  });
-
-  it("no Bash warning when ask covers with broader pattern", () => {
-    const p = writeSettings({
-      permissions: {
-        allow: ["Bash(*)"],
-        ask: ["Task", "Bash(*lockbox*)"],
-        defaultMode: "acceptEdits",
-      },
-    });
-    const warnings = checkPermissions(p);
-    expect(warnings.some((w) => w.includes("Bash"))).toBe(false);
-  });
-
-  it("warns when lockbox:clean is in deny instead of ask", () => {
-    const p = writeSettings({
-      permissions: {
-        allow: ["Bash(*)"],
-        deny: ["Bash(echo*lockbox*clean*)"],
-        ask: ["Task"],
-        defaultMode: "acceptEdits",
-      },
-    });
-    const warnings = checkPermissions(p);
-    expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toContain("deny");
-    expect(warnings[0]).toContain("Move it to permissions.ask");
-  });
-
-  it("still warns when ask has unrelated Bash pattern", () => {
-    const p = writeSettings({
-      permissions: {
-        allow: ["Bash(*)"],
-        ask: ["Task", "Bash(rm -rf*)"],
-        defaultMode: "acceptEdits",
-      },
-    });
-    const warnings = checkPermissions(p);
-    expect(warnings.some((w) => w.includes("Bash"))).toBe(true);
   });
 
   it("no warnings when permissions are correct", () => {
