@@ -9,7 +9,11 @@ triggers:
 
 # Lockbox Escape
 
-When your session is locked by lockbox (external actions blocked due to untrusted data in context), use Claude Code's built-in plan mode to describe the actions you need taken.
+When your session is locked by lockbox (external actions blocked due to untrusted data in context):
+
+**First**: If the blocked command is read-only (search, list, get), it should be classified as safe. Since lockbox config edits are blocked in tainted sessions (tamper resistance), give the user the exact JSON to add to `~/.claude/lockbox.json` so they can do it themselves or in a fresh session. Reference `/lockbox:classify` for the pattern format.
+
+**If the command genuinely acts externally** (sends email, pushes code, posts messages), use plan mode:
 
 ## Plan execution ordering
 

@@ -39,6 +39,8 @@ function blockTool(
     "\n" +
     "Continue working — read, write, edit, search, and Bash all work.\n" +
     "\n" +
+    "If this command is read-only and should be safe, load /lockbox:classify to add it to ~/.claude/lockbox.json.\n" +
+    "\n" +
     "When ready to take external actions:\n" +
     "1. Enter plan mode (EnterPlanMode)\n" +
     "2. Write plan with ALL concrete data inline (exact email bodies, etc.)\n" +

@@ -1,10 +1,25 @@
 import { Category, LockboxConfig } from "./types.js";
 
+/**
+ * Tamper resistance: lockbox config and state files must not be editable
+ * by tainted sessions. Reclassify Edit/Write as "acting" so they are
+ * blocked when the session is locked (but allowed when clean).
+ */
+function isLockboxFile(toolInput: Record<string, unknown>): boolean {
+  const filePath = (toolInput.file_path as string) ?? "";
+  return /lockbox\.json/.test(filePath) || /lockbox-state/.test(filePath);
+}
+
 export function classifyTool(
   toolName: string,
   toolInput: Record<string, unknown>,
   config: LockboxConfig,
 ): Category {
+  // Tamper resistance: protect lockbox config/state from tainted sessions
+  if ((toolName === "Edit" || toolName === "Write") && isLockboxFile(toolInput)) {
+    return "acting";
+  }
+
   const tools = config.tools;
 
   if (tools.safe?.includes(toolName)) return "safe";

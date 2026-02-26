@@ -72,6 +72,18 @@ describe("classifyTool", () => {
     expect(classifyTool("SomeNewTool", {}, CONFIG)).toBe("acting");
   });
 
+  it("reclassifies Edit/Write to lockbox files as acting (tamper resistance)", () => {
+    expect(classifyTool("Edit", { file_path: "/home/user/.claude/lockbox.json", old_string: "x", new_string: "y" }, CONFIG)).toBe("acting");
+    expect(classifyTool("Write", { file_path: "/home/user/.claude/lockbox.json", content: "{}" }, CONFIG)).toBe("acting");
+    expect(classifyTool("Edit", { file_path: "/tmp/lockbox-state-abc123.json", old_string: "x", new_string: "y" }, CONFIG)).toBe("acting");
+    expect(classifyTool("Write", { file_path: "/project/.claude/lockbox.json", content: "{}" }, CONFIG)).toBe("acting");
+  });
+
+  it("does not block Edit/Write to non-lockbox files", () => {
+    expect(classifyTool("Edit", { file_path: "/home/user/project/src/main.ts", old_string: "x", new_string: "y" }, CONFIG)).toBe("safe");
+    expect(classifyTool("Write", { file_path: "/home/user/notes.md", content: "hello" }, CONFIG)).toBe("safe");
+  });
+
   it("delegates Bash to classifyBash", () => {
     expect(classifyTool("Bash", { command: "ls -la" }, CONFIG)).toBe("safe");
     expect(classifyTool("Bash", { command: "git push origin main" }, CONFIG)).toBe("acting");

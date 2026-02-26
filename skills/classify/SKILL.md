@@ -42,10 +42,21 @@ Check order: `override_safe` → `unsafe_acting` → `unsafe` → `acting` → `
 
 ## When a command gets wrongly blocked
 
-1. Read the plugin defaults to understand existing patterns
-2. Determine the correct category for the command
-3. Add a regex pattern to the appropriate category in `~/.claude/lockbox.json`
-4. Only include the sections you're changing — omitted sections inherit from defaults
+If a blocked command is read-only or local, you should proactively reclassify it:
+
+1. Verify the command is genuinely read-only — run it with `--help` to check subcommands
+2. Read the plugin defaults (`lockbox.json` in the plugin root) for reference
+3. Determine the correct category:
+   - Read/search/list/get operations → `safe`
+   - Commands that send data externally (send email, post message, upload) → `acting`
+   - Commands that fetch untrusted external content → `unsafe`
+4. Edit `~/.claude/lockbox.json` to add a regex pattern to the appropriate category
+5. Only include the sections you're changing — omitted sections inherit from defaults
+6. Retry the blocked command — the new classification takes effect immediately
+
+**Tamper resistance**: Edits to `lockbox.json` and `lockbox-state` files are classified as `acting` — allowed in clean sessions but blocked in locked ones. If you're already locked when a command is blocked, you cannot edit the config to escape. Instead:
+- Tell the user what pattern to add (give them the exact JSON) so they can add it manually or in a fresh session
+- Or use plan mode to include the reclassification as a step
 
 ## User override file format
 
