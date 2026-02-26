@@ -1,0 +1,33 @@
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
+
+export function checkPermissions(settingsPath?: string): string[] {
+  const p = settingsPath ?? path.join(os.homedir(), ".claude", "settings.json");
+  let settings: Record<string, unknown>;
+  try {
+    settings = JSON.parse(fs.readFileSync(p, "utf-8"));
+  } catch {
+    return []; // can't read settings — don't warn
+  }
+
+  const perms = settings.permissions as Record<string, unknown> | undefined;
+  if (!perms) return [];
+
+  const allow = (perms.allow ?? []) as string[];
+  const warnings: string[] = [];
+
+  if (allow.some((p) => p === "Bash(*)" || p === "Bash")) {
+    warnings.push(
+      "Bash(*) in allow — echo 'lockbox:clean' auto-runs without user review",
+    );
+  }
+
+  if (allow.some((p) => p === "Task" || p === "Task(*)" || p.startsWith("Task("))) {
+    warnings.push(
+      "Task in allow — sub-agent prompts execute without user review",
+    );
+  }
+
+  return warnings;
+}

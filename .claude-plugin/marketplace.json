@@ -10,7 +10,7 @@
     {
       "name": "lockbox",
       "description": "Context quarantine — locks external actions when untrusted data enters the session",
-      "version": "0.6.4",
+      "version": "0.7.1",
       "category": "security",
       "source": "./"
     }
