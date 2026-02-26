@@ -50,3 +50,9 @@ Unknown bash commands default to `acting`. Priority order: override_safe → uns
 ## Adding Patterns
 
 Edit `lockbox.json`. Patterns are regex tested against the bash command string. For piped/chained commands, each segment is classified independently — if any segment is unsafe AND any is acting, the whole command becomes unsafe_acting.
+
+**Default patterns must be generic** — no user-specific CLI tools (e.g. `gog`) in `lockbox.json`. User-specific tools belong in `~/.claude/lockbox.json`. The skills guide sessions to add patterns there when commands are wrongly blocked.
+
+## Shell Parsing Pitfalls
+
+`splitCommand` splits on `|`, `&`, `;` — but must not split on `>&` (redirect syntax like `2>&1`). When adding new splitting logic, test against common shell redirect patterns.
