@@ -22,7 +22,7 @@ const CONFIG: LockboxConfig = {
   },
   mcp_default: "acting",
   bash_patterns: {
-    override_safe: ["--help"],
+    override_safe: ["--help", "--version"],
     unsafe_acting: ["curl\\s", "wget\\s"],
     unsafe: [],
     acting: [
@@ -34,6 +34,7 @@ const CONFIG: LockboxConfig = {
     safe: [
       "^(date|ls|cat|head|tail|wc|find|grep|rg)(\\s|$)",
       "^(echo|printf|tee|touch|sort|uniq|tr|cut|xargs)(\\s|$)",
+      "^(timeout|time|env|which|type|file|stat|readlink)(\\s|$)",
       "^(rm|mv|cp|mkdir)\\s",
       "git\\s+(status|log|diff|show|branch|add|commit|stash|fetch|tag|remote)",
     ],
@@ -151,6 +152,7 @@ describe("classifyBashSegment", () => {
 
   it("override_safe takes priority", () => {
     expect(classifyBashSegment("curl --help", patterns)).toBe("safe");
+    expect(classifyBashSegment("gog --version 2>&1", patterns)).toBe("safe");
   });
 
   it("unsafe_acting patterns", () => {
@@ -203,6 +205,10 @@ describe("classifyBash", () => {
 
   it("unsafe_acting alone = unsafe_acting", () => {
     expect(classifyBash("curl http://x", patterns)).toBe("unsafe_acting");
+  });
+
+  it("which && --version is safe (bug regression)", () => {
+    expect(classifyBash("which gog && gog --version 2>&1", patterns)).toBe("safe");
   });
 
   it("quoted pipe in grep does not split (bug regression)", () => {

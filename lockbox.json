@@ -29,7 +29,8 @@
   "mcp_default": "acting",
   "bash_patterns": {
     "override_safe": [
-      "--help"
+      "--help",
+      "--version"
     ],
     "unsafe_acting": [
       "curl\\s",
