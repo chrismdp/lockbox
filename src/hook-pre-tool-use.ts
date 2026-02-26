@@ -48,15 +48,13 @@ function blockTool(
     `Locked by: ${state.locked_by} at ${state.locked_at}\n` +
     `Blocked: ${desc}\n` +
     "\n" +
+    "STOP. Tell the user what was blocked and why. Do NOT attempt to work around this automatically.\n" +
+    "\n" +
     "Continue working — read, write, edit, search, and Bash all work.\n" +
     "\n" +
     "If this command is read-only and should be safe, load /lockbox:classify to add it to ~/.claude/lockbox.json.\n" +
     "\n" +
-    "To take external actions from a locked session:\n" +
-    "1. Spawn a sub-agent with Task — describe the exact actions to perform\n" +
-    "2. Sub-agent runs in a clean session and can execute external actions\n" +
-    "3. Report the sub-agent's results to the user\n" +
-    "4. If the results are safe, run: echo 'lockbox:clean' (user approves to clear the lock)";
+    "If the user asks you to take this external action, load /lockbox:escape for guidance.";
 
   const output: HookOutput = { decision: "block", reason };
   process.stdout.write(JSON.stringify(output));

