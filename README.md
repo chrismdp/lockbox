@@ -147,6 +147,19 @@ For Bash commands, patterns are checked in this order: `override_safe` > `unsafe
 
 For piped or chained commands (`|`, `&`, `;`), each segment is classified independently. If any segment is `unsafe` and any segment is `acting`, the whole command is classified as `unsafe_acting`.
 
+## Changelog
+
+### 0.8.x — Delegate sub-agent
+
+- **0.8.1** — Delegate sub-agent with independent lockbox state. Locked sessions can now spawn a clean agent to execute external actions with user approval, without unlocking the parent session. Two approval points: reviewing the delegate prompt, then confirming `echo 'lockbox:clean'` after reviewing results.
+- **0.8.2** — Fixed delegate namespace mismatch and improved block messages. Block messages now instruct the agent to stop and inform the user before attempting workarounds.
+- **0.8.3** — Permissions check now accounts for the deny list. Previously warned about `Bash(*)` in allow even when deny patterns covered the dangerous command (`echo 'lockbox:clean'`).
+
+### 0.6.x — Shell parsing and patterns
+
+- **0.6.3** — Fixed shell redirect splitting bug where `2>&1` was incorrectly parsed as a pipe separator.
+- **0.6.4** — Added `--version` to override_safe patterns so version checks are never blocked.
+
 ## Development
 
 ```bash
