@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { getStatePath, loadState, saveState, deleteState } from "../src/state";
+import { getStatePath, loadState, saveState, deleteState, findLockedSessions } from "../src/state";
 
 let tmpDir: string;
 
@@ -82,5 +82,41 @@ describe("deleteState", () => {
 
   it("does not throw when file is missing", () => {
     expect(() => deleteState("nope", tmpDir)).not.toThrow();
+  });
+});
+
+describe("findLockedSessions", () => {
+  it("finds locked sessions excluding own", () => {
+    saveState("parent", { locked: false, locked_by: null, locked_at: null, blocked_tools: [] }, tmpDir);
+    saveState("child-1", { locked: true, locked_by: "WebFetch", locked_at: "2025-01-01T00:00:00Z", blocked_tools: [] }, tmpDir);
+    saveState("child-2", { locked: true, locked_by: "curl", locked_at: "2025-01-01T00:00:00Z", blocked_tools: [] }, tmpDir);
+
+    const result = findLockedSessions("parent", tmpDir);
+    expect(result).toContain("child-1");
+    expect(result).toContain("child-2");
+    expect(result).not.toContain("parent");
+  });
+
+  it("excludes own session even if locked", () => {
+    saveState("self", { locked: true, locked_by: "WebFetch", locked_at: "2025-01-01T00:00:00Z", blocked_tools: [] }, tmpDir);
+    const result = findLockedSessions("self", tmpDir);
+    expect(result).toEqual([]);
+  });
+
+  it("ignores unlocked sessions", () => {
+    saveState("clean", { locked: false, locked_by: null, locked_at: null, blocked_tools: [] }, tmpDir);
+    const result = findLockedSessions("parent", tmpDir);
+    expect(result).toEqual([]);
+  });
+
+  it("handles corrupt state files gracefully", () => {
+    fs.writeFileSync(path.join(tmpDir, "lockbox-state-corrupt.json"), "not json{{{");
+    const result = findLockedSessions("parent", tmpDir);
+    expect(result).toEqual([]);
+  });
+
+  it("handles missing tmpDir gracefully", () => {
+    const result = findLockedSessions("parent", "/nonexistent/path");
+    expect(result).toEqual([]);
   });
 });

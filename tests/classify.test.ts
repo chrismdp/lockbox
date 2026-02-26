@@ -26,6 +26,7 @@ const CONFIG: LockboxConfig = {
     unsafe_acting: ["curl\\s", "wget\\s"],
     unsafe: [],
     acting: [
+      "lockbox-state",
       "git\\s+(push|reset|rebase)",
       "ssh\\s",
       "npm\\s+publish",
@@ -147,6 +148,13 @@ describe("classifyBashSegment", () => {
 
   it("unknown commands default to acting", () => {
     expect(classifyBashSegment("someunknowntool --flag", patterns)).toBe("acting");
+  });
+
+  it("lockbox-state commands are classified as acting (tamper resistance)", () => {
+    expect(classifyBashSegment("cat /tmp/lockbox-state-abc.json", patterns)).toBe("acting");
+    expect(classifyBashSegment("cat > /tmp/lockbox-state-abc.json", patterns)).toBe("acting");
+    expect(classifyBashSegment("rm /tmp/lockbox-state-abc.json", patterns)).toBe("acting");
+    expect(classifyBashSegment("echo '{}' > /tmp/lockbox-state-abc.json", patterns)).toBe("acting");
   });
 });
 

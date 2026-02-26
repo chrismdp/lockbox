@@ -37,6 +37,7 @@
     ],
     "unsafe": [],
     "acting": [
+      "lockbox-state",
       "git\\s+(push|reset|rebase)",
       "op\\s",
       "npm\\s+publish",

@@ -39,6 +39,33 @@ export function saveState(
   fs.writeFileSync(p, JSON.stringify(state, null, 2));
 }
 
+export function findLockedSessions(
+  excludeSessionId: string,
+  tmpDir: string = os.tmpdir(),
+): string[] {
+  const locked: string[] = [];
+  let files: string[];
+  try {
+    files = fs.readdirSync(tmpDir);
+  } catch {
+    return locked;
+  }
+  const prefix = "lockbox-state-";
+  const suffix = ".json";
+  for (const file of files) {
+    if (!file.startsWith(prefix) || !file.endsWith(suffix)) continue;
+    const sessionId = file.slice(prefix.length, -suffix.length);
+    if (sessionId === excludeSessionId) continue;
+    try {
+      const data = JSON.parse(fs.readFileSync(path.join(tmpDir, file), "utf-8"));
+      if (data.locked === true) locked.push(sessionId);
+    } catch {
+      // corrupt or unreadable — skip
+    }
+  }
+  return locked;
+}
+
 export function deleteState(
   sessionId: string,
   tmpDir?: string,
