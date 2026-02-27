@@ -1,0 +1,6 @@
+#!/bin/sh
+# Lockbox delegate approval gate.
+# Triggers a Bash `ask` prompt with a distinctive command name.
+# Claude Code auto-approves `echo` and broad `node` approvals are dangerous,
+# so we use a named script. Must stay in permissions.ask, never allow.
+[ -n "$1" ] && printf '%s\n' "$@"

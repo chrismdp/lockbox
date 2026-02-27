@@ -91,12 +91,16 @@ The delegate's taint is discarded — it does not propagate back to the parent.
  3. Block message: STOP, tell user, use delegate if asked
  4. User asks agent to push
  5. Agent spawns Task(subagent_type="delegate") with concrete instructions
- 6. User reviews and approves the Task prompt        <-- approval point
- 7. Lockbox backs up state, clears for delegate
- 8. Delegate runs clean, executes git push
- 9. Delegate finishes, lockbox restores parent's lock
-10. Agent reports results to user
+ 6. Lockbox backs up state, clears for delegate
+ 7. Delegate loads /lockbox:prompt, runs lockbox-prompt "push master to origin"
+ 8. ask rule triggers permission prompt           <-- approval point
+ 9. User reviews prompt content and approves
+10. Delegate executes git push
+11. Delegate finishes, lockbox restores parent's lock
+12. Agent reports results to user
 ```
+
+The approval point is the delegate's `lockbox-prompt` script (step 8), NOT the Task spawn (step 5). Claude Code's Task tool has "Permission Required: No" — `ask` rules for Task are silently ignored. Claude Code auto-approves `echo`, so a named script is used instead. Bash's `ask` support works for named scripts. `ask` is evaluated before `allow`, so the prompt fires even when `Bash(*)` is in allow.
 
 The session stays locked after delegation. Once untrusted data enters a session, it stays tainted. Delegate for each external action, or start a new session.
 
@@ -106,7 +110,11 @@ Lockbox relies on one user approval point to prevent a compromised session from 
 
 | Permission | What it protects | Config |
 |---|---|---|
-| `Task(lockbox:delegate)` | User reviews the delegate prompt before a clean sub-agent executes | Must be in `ask` — use `Task(lockbox:delegate)` not broad `Task` |
+| `Bash(*lockbox-prompt*)` | User reviews the delegate's task before it executes | Must be in `ask` |
+
+The delegate loads the `/lockbox:prompt` skill and runs `lockbox-prompt "<summary>"` as its very first action. The `ask` rule triggers a Claude Code permission prompt — the user sees what the delegate will do and approves or denies.
+
+**Why not echo or Task(lockbox:delegate) in ask?** Claude Code auto-approves `echo` as a built-in safe command, bypassing `ask` rules entirely. Claude Code's Task tool has "Permission Required: No" — `ask` is ignored for Task, only `deny` works. The named `lockbox-prompt` script uses Bash's working `ask` support. It must stay in `ask`, never `allow` — auto-approving it bypasses the approval gate entirely.
 
 Regular sub-agents (Explore, Plan, general-purpose) don't need special permissions — they inherit the parent's lock state and can't take acting commands. Only the delegate gets clean state, so only it needs user approval.
 

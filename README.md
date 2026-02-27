@@ -52,7 +52,19 @@ Without Lockbox, allowing unrestricted WebFetch is risky. A compromised agent co
 
 ### 3. Check permissions
 
-Run `/lockbox:install` inside Claude Code to verify your permissions are configured correctly. Lockbox needs `Task(lockbox:delegate)` to require user approval — without this, a compromised session could bypass the quarantine. See [docs/internals.md](docs/internals.md#required-permissions) for the full permission model.
+Run `/lockbox:install` inside Claude Code to verify your permissions are configured correctly. Lockbox needs one `ask` rule to work:
+
+```json
+{
+  "permissions": {
+    "ask": [
+      "Bash(*lockbox-prompt*)"
+    ]
+  }
+}
+```
+
+The delegate sub-agent runs `lockbox-prompt` to announce its task before executing. This `ask` rule triggers a Claude Code permission prompt so you review and approve the delegate's actions. Without it, a compromised session could silently delegate external actions. See [docs/internals.md](docs/internals.md#required-permissions) for why this uses a named script instead of `echo` or `Task(lockbox:delegate)`.
 
 ## Usage
 
@@ -163,6 +175,10 @@ Claude Code's dangerous mode (`--dangerously-skip-permissions` / `bypassPermissi
 Claude Code session transcripts (`.jsonl` files under `~/.claude/`) may contain tainted data from previous sessions. Sub-agents and plan mode can read these files, reintroducing prompt injection content into the current context. Lockbox classifies reading `.claude/*.jsonl` files as `unsafe` — the session locks just as if you had fetched an untrusted web page. This is enforced in classify.ts alongside the existing tamper resistance checks, not via configurable patterns, because it is a fundamental property of the security model.
 
 ## Changelog
+
+### 0.11.x — Delegate approval
+
+- **0.11.0** — Delegate approval gate replaced with `lockbox-prompt` shell script. Claude Code auto-approves `echo` (bypassing the old echo-based gate) and `Task` ignores `ask` rules, so the delegate now loads the `/lockbox:prompt` skill and runs a named script. New ask pattern: `Bash(*lockbox-prompt*)`. Permissions checker warns CRITICAL if lockbox-prompt is auto-allowed. Users must update their `permissions.ask` entry — run `/lockbox:install` to check.
 
 ### 0.10.x — Dangerous mode detection and session taint
 

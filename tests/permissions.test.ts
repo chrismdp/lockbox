@@ -21,38 +21,116 @@ function writeSettings(settings: Record<string, unknown>): string {
 }
 
 describe("checkPermissions", () => {
-  // --- Delegate sub-agent permissions ---
-  // Only lockbox:delegate matters. Regular sub-agents inherit the parent lock.
+  // --- Prompt approval gate (primary check) ---
+  // The delegate runs `lockbox-prompt "<summary>"` as its first action.
+  // This must be in `ask` so the user sees and approves it.
 
-  it("warns when Task(*) auto-allows delegate", () => {
+  it("warns when prompt pattern not in ask", () => {
     const p = writeSettings({
-      permissions: { allow: ["Task(*)"], defaultMode: "acceptEdits" },
+      permissions: { allow: ["Read(/home/**)"], defaultMode: "acceptEdits" },
     });
     const warnings = checkPermissions(p);
-    expect(warnings.some((w) => w.includes("delegate") && w.includes("auto-allowed"))).toBe(true);
+    expect(warnings.some((w) => w.includes("lockbox-prompt") && w.includes("not in permissions.ask"))).toBe(true);
   });
 
-  it("warns when bare Task auto-allows delegate", () => {
+  it("warns CRITICAL when prompt auto-allowed via Bash(*)", () => {
     const p = writeSettings({
-      permissions: { allow: ["Task"], defaultMode: "acceptEdits" },
+      permissions: { allow: ["Bash(*)"], defaultMode: "acceptEdits" },
     });
     const warnings = checkPermissions(p);
-    expect(warnings.some((w) => w.includes("delegate") && w.includes("auto-allowed"))).toBe(true);
+    expect(warnings.some((w) => w.includes("CRITICAL") && w.includes("auto-allowed"))).toBe(true);
   });
 
-  it("no warning when Task(*) in allow but delegate in ask", () => {
+  it("warns CRITICAL when prompt auto-allowed via bare Bash", () => {
+    const p = writeSettings({
+      permissions: { allow: ["Bash"], defaultMode: "acceptEdits" },
+    });
+    const warnings = checkPermissions(p);
+    expect(warnings.some((w) => w.includes("CRITICAL") && w.includes("auto-allowed"))).toBe(true);
+  });
+
+  it("warns CRITICAL when prompt in ask but also auto-allowed", () => {
     const p = writeSettings({
       permissions: {
-        allow: ["Task(*)"],
-        ask: ["Task(lockbox:delegate)"],
+        allow: ["Bash(*)"],
+        ask: ['Bash(*lockbox-prompt*)'],
         defaultMode: "acceptEdits",
       },
     });
     const warnings = checkPermissions(p);
-    expect(warnings.some((w) => w.includes("delegate"))).toBe(false);
+    expect(warnings.some((w) => w.includes("CRITICAL") && w.includes("auto-allowed"))).toBe(true);
   });
 
-  it("no warning when Task(*) in allow but delegate in deny", () => {
+  it("no warning when prompt pattern in ask without broad allow", () => {
+    const p = writeSettings({
+      permissions: {
+        allow: ["Read(/home/**)"],
+        ask: ['Bash(*lockbox-prompt*)'],
+        defaultMode: "acceptEdits",
+      },
+    });
+    const warnings = checkPermissions(p);
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("no warning when broad Bash in ask covers prompt", () => {
+    const p = writeSettings({
+      permissions: {
+        allow: ["Read(/home/**)"],
+        ask: ["Bash"],
+        defaultMode: "acceptEdits",
+      },
+    });
+    const warnings = checkPermissions(p);
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("no warning when Bash(*) in ask covers prompt", () => {
+    const p = writeSettings({
+      permissions: {
+        allow: ["Read(/home/**)"],
+        ask: ["Bash(*)"],
+        defaultMode: "acceptEdits",
+      },
+    });
+    const warnings = checkPermissions(p);
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("warns when prompt pattern denied", () => {
+    const p = writeSettings({
+      permissions: {
+        deny: ['Bash(*lockbox-prompt*)'],
+        defaultMode: "acceptEdits",
+      },
+    });
+    const warnings = checkPermissions(p);
+    expect(warnings.some((w) => w.includes("lockbox-prompt") && w.includes("deny"))).toBe(true);
+  });
+
+  // --- Task secondary warning ---
+
+  it("warns about Task auto-allow when prompt gate missing", () => {
+    const p = writeSettings({
+      permissions: { allow: ["Task(*)"], defaultMode: "acceptEdits" },
+    });
+    const warnings = checkPermissions(p);
+    expect(warnings.some((w) => w.includes("Task") && w.includes("Permission Required: No"))).toBe(true);
+  });
+
+  it("no Task warning when prompt gate is present", () => {
+    const p = writeSettings({
+      permissions: {
+        allow: ["Task(*)"],
+        ask: ['Bash(*lockbox-prompt*)'],
+        defaultMode: "acceptEdits",
+      },
+    });
+    const warnings = checkPermissions(p);
+    expect(warnings.some((w) => w.includes("Task"))).toBe(false);
+  });
+
+  it("no Task warning when delegate denied", () => {
     const p = writeSettings({
       permissions: {
         allow: ["Task(*)"],
@@ -61,60 +139,16 @@ describe("checkPermissions", () => {
       },
     });
     const warnings = checkPermissions(p);
-    expect(warnings.some((w) => w.includes("delegate"))).toBe(false);
+    expect(warnings.some((w) => w.includes("Task") && w.includes("Permission Required: No"))).toBe(false);
   });
 
-  it("no warning when broad Task in ask covers delegate", () => {
-    const p = writeSettings({
-      permissions: {
-        allow: ["Read(/home/**)"],
-        ask: ["Task"],
-        defaultMode: "acceptEdits",
-      },
-    });
-    const warnings = checkPermissions(p);
-    expect(warnings).toHaveLength(0);
-  });
-
-  it("warns when delegate not in allow or ask", () => {
-    const p = writeSettings({
-      permissions: {
-        allow: ["Read(/home/**)"],
-        defaultMode: "acceptEdits",
-      },
-    });
-    const warnings = checkPermissions(p);
-    expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toContain("delegate");
-    expect(warnings[0]).toContain("not in ask");
-  });
-
-  it("warns when delegate auto-allowed with broad permissions", () => {
-    const p = writeSettings({
-      permissions: { allow: ["Bash(*)", "Task(*)"], defaultMode: "acceptEdits" },
-    });
-    const warnings = checkPermissions(p);
-    expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toContain("delegate");
-  });
-
-  it("no warning when non-delegate Task agents are in allow", () => {
-    const p = writeSettings({
-      permissions: {
-        allow: ["Task(general-purpose)", "Task(Explore)"],
-        ask: ["Task(lockbox:delegate)"],
-        defaultMode: "acceptEdits",
-      },
-    });
-    const warnings = checkPermissions(p);
-    expect(warnings.some((w) => w.includes("delegate"))).toBe(false);
-  });
+  // --- Edge cases ---
 
   it("no warnings when permissions are correct", () => {
     const p = writeSettings({
       permissions: {
-        allow: ["Read(/home/**)", "Bash(git status)"],
-        ask: ["Task(lockbox:delegate)"],
+        allow: ["Read(/home/**)", "Task(*)"],
+        ask: ['Bash(*lockbox-prompt*)'],
         defaultMode: "acceptEdits",
       },
     });

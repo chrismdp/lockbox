@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "lockbox-local",
-  "description": "Local marketplace for the Lockbox quarantine plugin",
+  "name": "lockbox",
+  "description": "Context quarantine — locks external actions when untrusted data enters the session",
   "owner": {
     "name": "Chris Parsons",
     "url": "https://chrismdp.com"
@@ -10,7 +10,7 @@
     {
       "name": "lockbox",
       "description": "Context quarantine — locks external actions when untrusted data enters the session",
-      "version": "0.10.3",
+      "version": "0.11.0",
       "category": "security",
       "source": "./"
     }
