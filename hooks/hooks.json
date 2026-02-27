@@ -24,7 +24,6 @@
     ],
     "SubagentStart": [
       {
-        "matcher": "delegate",
         "hooks": [
           {
             "type": "command",
@@ -36,7 +35,6 @@
     ],
     "SubagentStop": [
       {
-        "matcher": "delegate",
         "hooks": [
           {
             "type": "command",
