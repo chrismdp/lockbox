@@ -39,7 +39,7 @@
     "unsafe": [],
     "acting": [
       "lockbox-state",
-      "git\\s+(push|reset|rebase)",
+      "git\\s+(push|rebase)",
       "op\\s",
       "npm\\s+publish",
       "sudo\\s",
@@ -58,7 +58,7 @@
       "^(basename|dirname|realpath|mktemp)(\\s|$)",
       "^(tar|zip|unzip|gzip|gunzip)(\\s|$)",
       "^(sha256sum|md5sum|base64|xxd)(\\s|$)",
-      "git\\s+(status|log|diff|show|branch|add|commit|stash|fetch|tag|remote)",
+      "git\\s+(status|log|diff|show|branch|add|commit|stash|fetch|tag|remote|reset)",
       "^(rm|mv|cp|mkdir)\\s",
       "^claude\\s",
       "^(npm|npx|yarn|pnpm|bun)\\s"

@@ -28,7 +28,7 @@ The harness detects the lock, not the agent. By the time untrusted data enters t
 
 ### 1. Add the plugin
 
-Install Lockbox from the [Claude Code marketplace](https://github.com/chrismdp/claude-marketplace):
+Install Lockbox from my [skills marketplace](https://github.com/chrismdp/claude-marketplace):
 
 ```
 claude mcp add-from-claude-marketplace lockbox
@@ -86,6 +86,8 @@ Every tool and Bash command falls into one of four categories:
 | **unsafe** | Reads external data | Never (but locks the session) | WebFetch, Perplexity, curl |
 | **acting** | Takes external action | Yes | git push, ssh, npm publish, send email |
 | **unsafe_acting** | Reads external AND acts | Yes (after first use) | curl piped to external service |
+
+<img src="lockbox-2x2-matrix.jpg" alt="Lockbox tool categories as a 2x2 matrix: safe and unsafe on the left, acting and unsafe acting on the right" />
 
 ### Locking
 
@@ -150,7 +152,21 @@ For Bash commands, patterns are checked in this order: `override_safe` > `unsafe
 
 For piped or chained commands (`|`, `&`, `;`), each segment is classified independently. If any segment is `unsafe` and any segment is `acting`, the whole command is classified as `unsafe_acting`.
 
+## Limitations
+
+### Dangerous mode
+
+Claude Code's dangerous mode (`--dangerously-skip-permissions` / `bypassPermissions`) auto-approves all tool calls, including the delegate sub-agent approval that lockbox depends on. When lockbox detects dangerous mode in a locked session, it blocks actions but disables delegation — there is no safe escape hatch because the user review step is bypassed. Switch to a safer permission mode (e.g. `acceptEdits`) to re-enable quarantine.
+
+### Session transcript taint
+
+Claude Code session transcripts (`.jsonl` files under `~/.claude/`) may contain tainted data from previous sessions. Sub-agents and plan mode can read these files, reintroducing prompt injection content into the current context. Lockbox classifies reading `.claude/*.jsonl` files as `unsafe` — the session locks just as if you had fetched an untrusted web page. This is enforced in classify.ts alongside the existing tamper resistance checks, not via configurable patterns, because it is a fundamental property of the security model.
+
 ## Changelog
+
+### 0.10.x — Dangerous mode detection and session taint
+
+- **0.10.0** — Detect dangerous mode (bypassPermissions) at runtime: block actions with a specific message and disable delegation since it would auto-approve without user review. Classify reading Claude Code session transcripts (.jsonl under .claude/) as unsafe to prevent taint reintroduction via plan mode and sub-agents. Move git reset from acting to safe. Install skill now warns about skipDangerousModePermissionPrompt.
 
 ### 0.9.x — Simplification
 

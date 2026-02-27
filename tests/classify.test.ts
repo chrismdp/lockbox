@@ -27,7 +27,7 @@ const CONFIG: LockboxConfig = {
     unsafe: [],
     acting: [
       "lockbox-state",
-      "git\\s+(push|reset|rebase)",
+      "git\\s+(push|rebase)",
       "ssh\\s",
       "npm\\s+publish",
     ],
@@ -36,7 +36,7 @@ const CONFIG: LockboxConfig = {
       "^(echo|printf|tee|touch|sort|uniq|tr|cut|xargs)(\\s|$)",
       "^(timeout|time|env|which|type|file|stat|readlink)(\\s|$)",
       "^(rm|mv|cp|mkdir)\\s",
-      "git\\s+(status|log|diff|show|branch|add|commit|stash|fetch|tag|remote)",
+      "git\\s+(status|log|diff|show|branch|add|commit|stash|fetch|tag|remote|reset)",
     ],
   },
 };
@@ -83,6 +83,24 @@ describe("classifyTool", () => {
   it("does not block Edit/Write to non-lockbox files", () => {
     expect(classifyTool("Edit", { file_path: "/home/user/project/src/main.ts", old_string: "x", new_string: "y" }, CONFIG)).toBe("safe");
     expect(classifyTool("Write", { file_path: "/home/user/notes.md", content: "hello" }, CONFIG)).toBe("safe");
+  });
+
+  it("classifies Read of Claude session transcripts as unsafe", () => {
+    expect(classifyTool("Read", { file_path: "/home/user/.claude/projects/foo/abc123.jsonl" }, CONFIG)).toBe("unsafe");
+    expect(classifyTool("Read", { file_path: "/home/user/.claude/projects/foo/subagents/agent-xyz.jsonl" }, CONFIG)).toBe("unsafe");
+  });
+
+  it("classifies Grep/Glob targeting .claude session dirs as unsafe", () => {
+    expect(classifyTool("Grep", { path: "/home/user/.claude/projects/foo/", pattern: "secret" }, CONFIG)).toBe("unsafe");
+    expect(classifyTool("Glob", { path: "/home/user/.claude/projects/", pattern: "*.jsonl" }, CONFIG)).toBe("unsafe");
+  });
+
+  it("does not classify Read of non-session .jsonl as unsafe", () => {
+    expect(classifyTool("Read", { file_path: "/home/user/project/data.jsonl" }, CONFIG)).toBe("safe");
+  });
+
+  it("does not classify Read of .claude non-jsonl files as unsafe", () => {
+    expect(classifyTool("Read", { file_path: "/home/user/.claude/settings.json" }, CONFIG)).toBe("safe");
   });
 
   it("delegates Bash to classifyBash", () => {
