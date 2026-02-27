@@ -49,10 +49,37 @@ describe("checkPermissions", () => {
     expect(warnings.some((w) => w.includes("CRITICAL") && w.includes("auto-allowed"))).toBe(true);
   });
 
-  it("warns CRITICAL when prompt in ask but also auto-allowed", () => {
+  it("no warning when generic Bash(*) in allow but specific pattern in ask", () => {
+    // Claude Code specificity: specific ask beats generic allow
     const p = writeSettings({
       permissions: {
         allow: ["Bash(*)"],
+        ask: ['Bash(*lockbox-prompt*)'],
+        defaultMode: "acceptEdits",
+      },
+    });
+    const warnings = checkPermissions(p);
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("no warning when bare Bash in allow but specific pattern in ask", () => {
+    // Claude Code specificity: specific ask beats generic allow
+    const p = writeSettings({
+      permissions: {
+        allow: ["Bash"],
+        ask: ['Bash(*lockbox-prompt*)'],
+        defaultMode: "acceptEdits",
+      },
+    });
+    const warnings = checkPermissions(p);
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("warns CRITICAL when specific allow matches same specificity as ask", () => {
+    // Same specificity — allow takes precedence, bypassing the gate
+    const p = writeSettings({
+      permissions: {
+        allow: ["Bash(*lockbox-prompt*)"],
         ask: ['Bash(*lockbox-prompt*)'],
         defaultMode: "acceptEdits",
       },
