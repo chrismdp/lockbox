@@ -12,19 +12,19 @@ npm test         # vitest run
 ## Releasing
 
 After pushing, always ask: patch, minor, or major?
-- **Patch** (0.6.1 → 0.6.2): Bug fixes, config pattern additions
-- **Minor** (0.6.x → 0.7.0): New features, hook changes, new classification categories
+- **Patch** (0.10.2 → 0.10.3): Bug fixes, config pattern additions
+- **Minor** (0.10.3 → 0.11.0): New features, hook changes, new classification categories
 - **Major** (0.x → 1.0): Breaking config format changes
+
+Patch numbers are not limited to single digits — 0.10.9 → 0.10.10 is valid. Only bump the minor version for genuinely new features.
 
 Bump version in all three places, commit with "Bump version to X.Y.Z", and push:
 - `package.json`
 - `.claude-plugin/plugin.json`
 - `.claude-plugin/marketplace.json`
 
-After pushing, update the local marketplace and plugin, create a GitHub release, and update the remote marketplace:
+After pushing, create a GitHub release and update the remote marketplace:
 ```bash
-claude plugin marketplace update lockbox-local
-claude plugin update "lockbox@lockbox-local"
 gh release create vX.Y.Z --title "vX.Y.Z" --notes "Release notes here"
 ```
 
