@@ -48,7 +48,7 @@ Open `~/.claude/settings.json` and add `WebFetch` to your global allow list:
 }
 ```
 
-Without Lockbox, allowing unrestricted WebFetch is risky. A compromised agent could fetch attacker-controlled content and then act on it. With Lockbox, the fetch locks the session and all external actions are blocked until you explicitly clear the lock. The damage path is cut, so the fetch is safe.
+Without Lockbox, allowing unrestricted WebFetch is risky. A compromised agent could fetch attacker-controlled content and then act on it. With Lockbox, the fetch locks the session and all external actions are blocked — they must be delegated through a clean sub-agent that you approve. The damage path is cut, so the fetch is safe.
 
 ### 3. Check permissions
 
@@ -58,7 +58,7 @@ Run `/lockbox:install` inside Claude Code to verify your permissions are configu
 
 Just use Claude Code the way you normally would. Lockbox stays out of the way until it matters, and you will not notice it on sessions that only do local work.
 
-When your session reads external content (a web page, an API, an email), Lockbox locks the session silently. Everything local keeps working: reads, writes, edits, search, Bash. The only difference is that external actions like git push or sending messages are blocked until you clear context.
+When your session reads external content (a web page, an API, an email), Lockbox locks the session silently. Everything local keeps working: reads, writes, edits, search, Bash. The only difference is that external actions like git push or sending messages are blocked for the rest of the session — delegate them through a clean sub-agent when needed.
 
 In practice this means delegation happens automatically for tasks that mix external reads with external actions. Claude will suggest this when it gets blocked. You get **fewer interruptions**, not more, because you stop getting permission prompts for every WebFetch and curl.
 

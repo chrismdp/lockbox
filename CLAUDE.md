@@ -21,11 +21,20 @@ Bump version in all three places, commit with "Bump version to X.Y.Z", and push:
 - `.claude-plugin/plugin.json`
 - `.claude-plugin/marketplace.json`
 
-After pushing, update the local marketplace and plugin:
+After pushing, update the local marketplace and plugin, then create a GitHub release:
 ```bash
 claude plugin marketplace update lockbox-local
 claude plugin update "lockbox@lockbox-local"
+gh release create vX.Y.Z --title "vX.Y.Z" --notes "Release notes here"
 ```
+
+Always add a changelog entry to the `## Changelog` section in `README.md` for every release.
+
+## Updating Rules at Runtime
+
+When a command is wrongly blocked, the user needs to add a safe pattern to `~/.claude/lockbox.json`. The current session can't do this itself — editing lockbox config from a locked session is classified as `acting` (tamper resistance). The user runs a separate Claude Code session or terminal to update the rules. The `/lockbox:classify` skill guides users through what to add.
+
+**Known limitation:** delegate sessions start clean, so they *could* edit lockbox config. This is mitigated by the user reviewing the delegate prompt — they'd see any attempt to weaken rules. A hard block on config edits regardless of state is a future option.
 
 ## Architecture
 
