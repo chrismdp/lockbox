@@ -21,12 +21,14 @@ Bump version in all three places, commit with "Bump version to X.Y.Z", and push:
 - `.claude-plugin/plugin.json`
 - `.claude-plugin/marketplace.json`
 
-After pushing, update the local marketplace and plugin, then create a GitHub release:
+After pushing, update the local marketplace and plugin, create a GitHub release, and update the remote marketplace:
 ```bash
 claude plugin marketplace update lockbox-local
 claude plugin update "lockbox@lockbox-local"
 gh release create vX.Y.Z --title "vX.Y.Z" --notes "Release notes here"
 ```
+
+Then update `chrismdp/claude-marketplace` — bump the lockbox version in `.claude-plugin/marketplace.json`, commit, and push.
 
 Always add a changelog entry to the `## Changelog` section in `README.md` for every release.
 
