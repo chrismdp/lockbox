@@ -178,6 +178,7 @@ Claude Code session transcripts (`.jsonl` files under `~/.claude/`) may contain 
 
 ### 0.11.x — Delegate approval
 
+- **0.11.1** — Fix install skill precedence docs: generic `Bash(*)` in allow is fine with specific `Bash(*lockbox-prompt*)` in ask. Add local development instructions to CLAUDE.md.
 - **0.11.0** — Delegate approval gate replaced with `lockbox-prompt` shell script. Claude Code auto-approves `echo` (bypassing the old echo-based gate) and `Task` ignores `ask` rules, so the delegate now loads the `/lockbox:prompt` skill and runs a named script. New ask pattern: `Bash(*lockbox-prompt*)`. Permissions checker warns CRITICAL if lockbox-prompt is auto-allowed. Users must update their `permissions.ask` entry — run `/lockbox:install` to check.
 
 ### 0.10.x — Dangerous mode detection and session taint

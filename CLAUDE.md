@@ -9,6 +9,16 @@ npm run build    # tsc
 npm test         # vitest run
 ```
 
+## Local Development
+
+Use `--plugin-dir` to load lockbox directly from source without caching:
+
+```bash
+claude --plugin-dir /home/cp/code/lockbox
+```
+
+This avoids the plugin cache entirely — no risk of stale files or rogue `settings.json` leaking into `~/.claude/plugins/cache/`. Edit code, `npm run build`, restart Claude Code. Do not use a local marketplace for development — plugin `settings.json` files are loaded from the cache and can silently override permissions.
+
 ## Releasing
 
 After pushing, always ask: patch, minor, or major?

@@ -36,7 +36,7 @@ The plugin cache at `~/.claude/plugins/cache/` may contain `settings.local.json`
    - `Bash(*lockbox-prompt*)` MUST be in `ask` — without it, the delegate's approval prompt won't trigger and actions execute without user review
    - Also check for the old pattern `Bash(echo "🔓 LOCKBOX DELEGATE:*)` — if present, flag it as outdated and needing replacement (Claude Code auto-approves `echo`, so the old pattern no longer works)
 3. Check `permissions.allow` for patterns that auto-allow the prompt command:
-   - `Bash`, `Bash(*)`, or any `Bash(...)` pattern covering the lockbox-prompt command — if present, the approval prompt is bypassed. **`allow` takes precedence over `ask`** in Claude Code, so the prompt pattern MUST NOT appear in `allow` even if it's also in `ask`
+   - `Bash(*lockbox-prompt*)` specifically in `allow` — a **specific** `allow` pattern beats the same specific `ask` pattern. Generic `Bash` or `Bash(*)` in `allow` is fine — Claude Code's specificity-based precedence means the specific `ask` pattern still triggers. Only flag if the exact `Bash(*lockbox-prompt*)` pattern is in `allow`
 4. Check `permissions.deny` for mistakes:
    - `Bash(*lockbox-prompt*)` in `deny` — this blocks the approval prompt entirely, breaking delegation
 5. Optionally check for `Task(lockbox:delegate)` in `ask` — note that this has no effect (Task ignores `ask`), but keeping it is harmless as belt-and-suspenders in case Claude Code adds support later
@@ -69,7 +69,7 @@ This is the most critical fix. Add it to `permissions.ask`. This is the actual a
 }
 ```
 
-**Important:** If `Bash(*)` or `Bash` is already in `allow`, `Bash(*lockbox-prompt*)` in `ask` will NOT trigger — `allow` takes precedence over `ask`. The user must either remove the broad Bash allow, or accept that the delegate approval gate is bypassed.
+**Note:** Generic `Bash` or `Bash(*)` in `allow` is fine — Claude Code uses specificity-based precedence, so the specific `Bash(*lockbox-prompt*)` in `ask` still triggers the approval prompt. Only `Bash(*lockbox-prompt*)` specifically in `allow` would bypass the gate.
 
 **If the old echo pattern is in `ask`:**
 Replace `Bash(echo "🔓 LOCKBOX DELEGATE:*)` with the new `Bash(*lockbox-prompt*)` pattern. Claude Code auto-approves `echo` as a built-in safe command, so the old pattern no longer triggers a permission prompt. The `lockbox-prompt` script must be in `ask`, never `allow` — auto-approving it bypasses the approval gate.
