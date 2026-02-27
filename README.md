@@ -62,9 +62,9 @@ When your session reads external content (a web page, an API, an email), Lockbox
 
 In practice this means delegation happens automatically for tasks that mix external reads with external actions. Claude will suggest this when it gets blocked. You get **fewer interruptions**, not more, because you stop getting permission prompts for every WebFetch and curl.
 
-<img src="lockbox-in-action.png" alt="Lockbox blocking an acting tool in a locked session" />
+<img src="lockbox-in-action.png" alt="Lockbox blocking a git push in a locked session" />
 
-*Lockbox catches a gmail batch modify command after untrusted data entered the session. The agent acknowledges the block and offers to delegate.*
+*Lockbox blocks a git push after tainted data entered the session via a sub-agent. The agent acknowledges the block and offers to delegate.*
 
 ### When Lockbox blocks an action
 
