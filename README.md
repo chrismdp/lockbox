@@ -154,6 +154,7 @@ For piped or chained commands (`|`, `&`, `;`), each segment is classified indepe
 
 ### 0.9.x — Simplification
 
+- **0.9.2** — Install skill and permissions checker now recommend `Task(lockbox:delegate)` in ask instead of broad `Task`. Broad `Task` still accepted as fallback without warning.
 - **0.9.1** — Removed `echo 'lockbox:clean'` mechanism. Once locked, a session stays locked — delegate for external actions or start a new session. Single approval point (delegate prompt review). Removed Bash permission checks from install skill and permissions checker.
 - **0.9.0** — Fix lockbox:clean permission model: use `ask` not `deny`. Block message suggests Plan mode as last resort. Added install step and internals docs for required permissions.
 

@@ -22,7 +22,7 @@ One specific command MUST require user approval (not auto-allowed) for lockbox t
 3. Check `permissions.deny` for mistakes:
    - `Task(lockbox:delegate)` in `deny` — this blocks delegation entirely. It must be in `ask` instead so the user gets prompted.
 4. Check `permissions.ask` for required entries:
-   - `Task(lockbox:delegate)` MUST be in `ask` (or covered by `Task` in `ask`) — without it, default permission modes like `acceptEdits` may auto-approve the delegate without user review
+   - `Task(lockbox:delegate)` MUST be in `ask` — without it, default permission modes like `acceptEdits` may auto-approve the delegate without user review. Do NOT use broad `Task` in `ask` — that prompts for every sub-agent (Explore, Plan, etc.) which is noisy and unnecessary
 5. Report findings to the user
 6. If issues found, suggest specific fixes and offer to apply them
 
@@ -32,7 +32,7 @@ One specific command MUST require user approval (not auto-allowed) for lockbox t
 The delegate sub-agent would auto-execute without user review. Options:
 
 - **Option A (recommended)**: Keep `Task(*)` in `allow` (so regular sub-agents work smoothly) and add `Task(lockbox:delegate)` to `permissions.ask`. The ask entry overrides allow for the delegate specifically.
-- **Option B**: Move `Task` from `allow` to `ask` entirely. This means ALL sub-agents require approval, which is safer but more interruptions.
+- **Option B**: Remove `Task(*)` from `allow` and add `Task(lockbox:delegate)` to `permissions.ask`. Other sub-agents will follow the default permission mode.
 
 **If `Task(lockbox:delegate)` is not in `ask`:**
 This is the most common oversight. Default permission modes like `acceptEdits` may auto-approve the delegate without prompting the user. Add `Task(lockbox:delegate)` to `permissions.ask` so the delegate always requires explicit approval.

@@ -64,7 +64,7 @@ describe("checkPermissions", () => {
     expect(warnings.some((w) => w.includes("delegate"))).toBe(false);
   });
 
-  it("no warning when Task in ask covers delegate", () => {
+  it("no warning when broad Task in ask covers delegate", () => {
     const p = writeSettings({
       permissions: {
         allow: ["Read(/home/**)"],
@@ -73,7 +73,7 @@ describe("checkPermissions", () => {
       },
     });
     const warnings = checkPermissions(p);
-    expect(warnings.some((w) => w.includes("delegate"))).toBe(false);
+    expect(warnings).toHaveLength(0);
   });
 
   it("warns when delegate not in allow or ask", () => {
@@ -114,7 +114,7 @@ describe("checkPermissions", () => {
     const p = writeSettings({
       permissions: {
         allow: ["Read(/home/**)", "Bash(git status)"],
-        ask: ["Task"],
+        ask: ["Task(lockbox:delegate)"],
         defaultMode: "acceptEdits",
       },
     });

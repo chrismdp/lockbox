@@ -36,7 +36,7 @@ export function checkPermissions(settingsPath) {
     const warnings = [];
     // Only the delegate sub-agent matters — regular sub-agents inherit the parent's
     // lock and can't take acting commands. The delegate gets clean state, so it must
-    // require user approval (approval point 1 of the escape flow).
+    // require user approval.
     const delegateAllowed = matchesEntry(allow, "Task", "lockbox:delegate");
     const delegateDenied = matchesEntry(deny, "Task", "lockbox:delegate");
     const delegateInAsk = matchesEntry(ask, "Task", "lockbox:delegate");
