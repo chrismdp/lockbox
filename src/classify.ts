@@ -1,4 +1,4 @@
-import { Category, LockboxConfig } from "./types.js";
+import { Category, ClassifyResult, LockboxConfig } from "./types.js";
 
 /**
  * Tamper resistance: lockbox config and state files must not be editable
@@ -29,31 +29,32 @@ export function classifyTool(
   toolName: string,
   toolInput: Record<string, unknown>,
   config: LockboxConfig,
-): Category {
+): ClassifyResult {
   // Tamper resistance: protect lockbox config/state from tainted sessions
   if ((toolName === "Edit" || toolName === "Write") && isLockboxFile(toolInput)) {
-    return "acting";
+    const filePath = (toolInput.file_path as string) ?? "";
+    return { category: "acting", reasons: [`tamper resistance: ${filePath} is a lockbox config/state file`] };
   }
 
   // Session transcript taint: reading old Claude Code sessions reintroduces
   // potentially tainted data. Classify as unsafe so the session locks.
   if ((toolName === "Read" || toolName === "Grep" || toolName === "Glob") && isClaudeSessionFile(toolInput)) {
-    return "unsafe";
+    return { category: "unsafe", reasons: ["Claude Code session transcript — may contain tainted data"] };
   }
 
   const tools = config.tools;
 
-  if (tools.safe?.includes(toolName)) return "safe";
-  if (tools.acting?.includes(toolName)) return "acting";
-  if (tools.unsafe?.includes(toolName)) return "unsafe";
-  if (tools.unsafe_acting?.includes(toolName)) return "unsafe_acting";
+  if (tools.safe?.includes(toolName)) return { category: "safe", reasons: [] };
+  if (tools.acting?.includes(toolName)) return { category: "acting", reasons: [`${toolName} is classified as acting`] };
+  if (tools.unsafe?.includes(toolName)) return { category: "unsafe", reasons: [`${toolName} is classified as unsafe`] };
+  if (tools.unsafe_acting?.includes(toolName)) return { category: "unsafe_acting", reasons: [`${toolName} is classified as unsafe_acting`] };
 
   // MCP tools: exact match, then prefix-based default
   if (toolName in config.mcp_tools) {
-    return config.mcp_tools[toolName];
+    return { category: config.mcp_tools[toolName], reasons: [`MCP tool ${toolName} is classified as ${config.mcp_tools[toolName]}`] };
   }
   if (toolName.startsWith("mcp__")) {
-    return config.mcp_default;
+    return { category: config.mcp_default, reasons: [`unknown MCP tool defaults to ${config.mcp_default}`] };
   }
 
   // Bash: classify by command content
@@ -65,7 +66,7 @@ export function classifyTool(
   }
 
   // Unknown tool -> acting (conservative)
-  return "acting";
+  return { category: "acting", reasons: [`unknown tool "${toolName}" defaults to acting`] };
 }
 
 /**
@@ -119,6 +120,12 @@ export function splitCommand(command: string): string[] {
   return segments.map((s) => s.trim()).filter((s) => s.length > 0);
 }
 
+export interface BashSegmentResult {
+  category: Category;
+  pattern?: string;
+  patternCategory?: string;
+}
+
 /**
  * Classify a single bash segment against pattern lists.
  * Check order: override_safe -> unsafe_acting -> unsafe -> acting -> safe -> default acting.
@@ -126,23 +133,23 @@ export function splitCommand(command: string): string[] {
 export function classifyBashSegment(
   segment: string,
   patterns: Record<string, string[]>,
-): Category {
+): BashSegmentResult {
   for (const p of patterns.override_safe ?? []) {
-    if (new RegExp(p).test(segment)) return "safe";
+    if (new RegExp(p).test(segment)) return { category: "safe", pattern: p, patternCategory: "override_safe" };
   }
   for (const p of patterns.unsafe_acting ?? []) {
-    if (new RegExp(p).test(segment)) return "unsafe_acting";
+    if (new RegExp(p).test(segment)) return { category: "unsafe_acting", pattern: p, patternCategory: "unsafe_acting" };
   }
   for (const p of patterns.unsafe ?? []) {
-    if (new RegExp(p).test(segment)) return "unsafe";
+    if (new RegExp(p).test(segment)) return { category: "unsafe", pattern: p, patternCategory: "unsafe" };
   }
   for (const p of patterns.acting ?? []) {
-    if (new RegExp(p).test(segment)) return "acting";
+    if (new RegExp(p).test(segment)) return { category: "acting", pattern: p, patternCategory: "acting" };
   }
   for (const p of patterns.safe ?? []) {
-    if (new RegExp(p).test(segment)) return "safe";
+    if (new RegExp(p).test(segment)) return { category: "safe", pattern: p, patternCategory: "safe" };
   }
-  return "acting";
+  return { category: "acting" };
 }
 
 /**
@@ -153,22 +160,36 @@ export function classifyBashSegment(
 export function classifyBash(
   command: string,
   patterns: Record<string, string[]>,
-): Category {
+): ClassifyResult {
   const segments = splitCommand(command);
+  const reasons: string[] = [];
 
   let hasUnsafe = false;
   let hasActing = false;
 
   for (const seg of segments) {
-    const cat = classifyBashSegment(seg, patterns);
+    const result = classifyBashSegment(seg, patterns);
+    const cat = result.category;
     if (cat === "unsafe" || cat === "unsafe_acting") hasUnsafe = true;
     if (cat === "acting" || cat === "unsafe_acting") hasActing = true;
+
+    if (cat !== "safe") {
+      const truncSeg = seg.length > 80 ? seg.slice(0, 80) + "..." : seg;
+      if (result.pattern) {
+        reasons.push(`"${truncSeg}" matched ${result.patternCategory} pattern /${result.pattern}/`);
+      } else {
+        reasons.push(`"${truncSeg}" — no safe pattern matched, defaults to acting`);
+      }
+    }
   }
 
-  if (hasUnsafe && hasActing) return "unsafe_acting";
-  if (hasActing) return "acting";
-  if (hasUnsafe) return "unsafe";
-  return "safe";
+  let category: Category;
+  if (hasUnsafe && hasActing) category = "unsafe_acting";
+  else if (hasActing) category = "acting";
+  else if (hasUnsafe) category = "unsafe";
+  else category = "safe";
+
+  return { category, reasons };
 }
 
 export function toolDescription(

@@ -25,12 +25,17 @@ function blockDangerousMode(
   toolInput: Record<string, unknown>,
   sessionId: string,
   tmpDir?: string,
+  classifyReasons?: string[],
 ): void {
   const desc = toolDescription(toolName, toolInput);
   if (!state.blocked_tools.includes(desc)) {
     state.blocked_tools.push(desc);
     saveState(sessionId, state, tmpDir);
   }
+
+  const reasonLines = classifyReasons && classifyReasons.length > 0
+    ? "\nClassified as acting because:\n" + classifyReasons.map((r) => `  - ${r}`).join("\n") + "\n"
+    : "";
 
   const reason =
     "LOCKBOX: Action blocked — session contains untrusted data.\n" +
@@ -42,6 +47,7 @@ function blockDangerousMode(
     "\n" +
     `Locked by: ${state.locked_by} at ${state.locked_at}\n` +
     `Blocked: ${desc}\n` +
+    reasonLines +
     "\n" +
     "STOP. Tell the user:\n" +
     "  1. Lockbox cannot protect this session in dangerous mode\n" +
@@ -60,6 +66,7 @@ function blockTool(
   toolInput: Record<string, unknown>,
   sessionId: string,
   tmpDir?: string,
+  classifyReasons?: string[],
 ): void {
   const desc = toolDescription(toolName, toolInput);
   if (!state.blocked_tools.includes(desc)) {
@@ -74,14 +81,21 @@ function blockTool(
       "\n  Run /lockbox:install to fix.\n"
     : "";
 
+  const reasonLines = classifyReasons && classifyReasons.length > 0
+    ? "\nClassified as acting because:\n" + classifyReasons.map((r) => `  - ${r}`).join("\n") + "\n"
+    : "";
+
   const reason =
     "LOCKBOX: Action blocked — session contains untrusted data.\n" +
     permBlock +
     "\n" +
     `Locked by: ${state.locked_by} at ${state.locked_at}\n` +
     `Blocked: ${desc}\n` +
+    reasonLines +
     "\n" +
-    "STOP. Tell the user what was blocked and why. Do NOT attempt to work around this automatically.\n" +
+    "STOP. Tell the user what was blocked and why, including the classification reasons above. Do NOT attempt to work around this automatically.\n" +
+    "\n" +
+    "If the classification looks WRONG (e.g. a safe command matched an acting pattern due to argument content), tell the user what pattern caused the false positive and suggest they update ~/.claude/lockbox.json in a separate session or via /lockbox:classify. A delegate sub-agent can also make this change since delegates start clean.\n" +
     "\n" +
     "Continue working — read, write, edit, search, and Bash all work.\n" +
     "\n" +
@@ -130,7 +144,7 @@ export function main(stdinData?: string, tmpDir?: string): void {
 
   const config = loadConfig();
   const state = loadState(sessionId, tmpDir);
-  const category = classifyTool(toolName, toolInput, config);
+  const { category, reasons } = classifyTool(toolName, toolInput, config);
   const isLocked = state.locked;
 
   // Safe: always passthrough
@@ -156,9 +170,9 @@ export function main(stdinData?: string, tmpDir?: string): void {
   // Acting (or unsafe_acting when already locked): block if locked
   if (isLocked) {
     if (isDangerousMode) {
-      blockDangerousMode(state, toolName, toolInput, sessionId, tmpDir);
+      blockDangerousMode(state, toolName, toolInput, sessionId, tmpDir, reasons);
     } else {
-      blockTool(state, toolName, toolInput, sessionId, tmpDir);
+      blockTool(state, toolName, toolInput, sessionId, tmpDir, reasons);
     }
     return;
   }

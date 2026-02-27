@@ -1,5 +1,10 @@
 export type Category = "safe" | "unsafe" | "acting" | "unsafe_acting";
 
+export interface ClassifyResult {
+  category: Category;
+  reasons: string[];
+}
+
 export interface LockboxConfig {
   tools: Record<string, string[]>;
   mcp_tools: Record<string, Category>;

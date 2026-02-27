@@ -40,7 +40,7 @@
     "acting": [
       "lockbox-state",
       "git\\s+(push|rebase)",
-      "op\\s",
+      "^op\\s",
       "npm\\s+publish",
       "sudo\\s",
       "ssh\\s",
