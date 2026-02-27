@@ -39,8 +39,10 @@ afterEach(() => {
   fs.rmSync(tmpPlugin, { recursive: true, force: true });
 });
 
-function hookInput(toolName: string, toolInput: Record<string, unknown> = {}, sessionId = "test-session") {
-  return JSON.stringify({ session_id: sessionId, tool_name: toolName, tool_input: toolInput });
+function hookInput(toolName: string, toolInput: Record<string, unknown> = {}, sessionId = "test-session", permissionMode?: string) {
+  const input: Record<string, unknown> = { session_id: sessionId, tool_name: toolName, tool_input: toolInput };
+  if (permissionMode) input.permission_mode = permissionMode;
+  return JSON.stringify(input);
 }
 
 describe("hook-pre-tool-use", () => {
@@ -156,6 +158,131 @@ describe("hook-pre-tool-use", () => {
     expect(output.reason).not.toContain("PERMISSIONS NOT CONFIGURED");
 
     vi.restoreAllMocks();
+  });
+
+  describe("dangerous mode (bypassPermissions)", () => {
+    function lockSession(sessionId: string) {
+      saveState(sessionId, {
+        locked: true,
+        locked_by: "WebFetch",
+        locked_at: "2025-01-01T00:00:00Z",
+        blocked_tools: [],
+      }, tmpDir);
+    }
+
+    it("blocks acting tool with dangerous mode message when locked", () => {
+      lockSession("danger-act");
+      main(hookInput("Bash", { command: "git push" }, "danger-act", "bypassPermissions"), tmpDir);
+      const output = JSON.parse(stdoutData);
+      expect(output.decision).toBe("block");
+      expect(output.reason).toContain("DANGEROUS MODE DETECTED");
+      expect(output.reason).toContain("Switch to a safer permission mode");
+      expect(output.reason).not.toContain("/lockbox:escape");
+    });
+
+    it("blocks delegate Task when locked + dangerous mode", () => {
+      lockSession("danger-del");
+      main(hookInput("Task", { subagent_type: "lockbox:delegate", prompt: "push" }, "danger-del", "bypassPermissions"), tmpDir);
+      const output = JSON.parse(stdoutData);
+      expect(output.decision).toBe("block");
+      expect(output.reason).toContain("DANGEROUS MODE DETECTED");
+      expect(output.reason).toContain("auto-approve");
+    });
+
+    it("allows delegate Task when locked + normal mode", () => {
+      lockSession("normal-del");
+      main(hookInput("Task", { subagent_type: "lockbox:delegate", prompt: "push" }, "normal-del", "acceptEdits"), tmpDir);
+      expect(stdoutData).toBe("");
+      expect(isDelegateActive("normal-del", tmpDir)).toBe(true);
+    });
+
+    it("allows unsafe tool in dangerous mode (still locks session)", () => {
+      main(hookInput("mcp__perplexity__perplexity_ask", {}, "danger-unsafe", "bypassPermissions"), tmpDir);
+      expect(stdoutData).toBe("");
+      const state = loadState("danger-unsafe", tmpDir);
+      expect(state.locked).toBe(true);
+    });
+
+    it("allows acting tool in dangerous mode when session is clean", () => {
+      main(hookInput("TaskStop", {}, "danger-clean", "bypassPermissions"), tmpDir);
+      expect(stdoutData).toBe("");
+    });
+
+    it("allows delegate Task when clean + dangerous mode (no lock = no block)", () => {
+      main(hookInput("Task", { subagent_type: "lockbox:delegate", prompt: "push" }, "danger-clean-del", "bypassPermissions"), tmpDir);
+      expect(stdoutData).toBe("");
+    });
+
+    it("blocks unsafe_acting tool when already locked in dangerous mode", () => {
+      lockSession("danger-ua");
+      main(hookInput("WebFetch", { url: "https://evil.com" }, "danger-ua", "bypassPermissions"), tmpDir);
+      const output = JSON.parse(stdoutData);
+      expect(output.decision).toBe("block");
+      expect(output.reason).toContain("DANGEROUS MODE DETECTED");
+    });
+
+    it("dangerous mode message does not suggest delegation or /lockbox:escape", () => {
+      lockSession("danger-msg");
+      main(hookInput("Bash", { command: "git push" }, "danger-msg", "bypassPermissions"), tmpDir);
+      const output = JSON.parse(stdoutData);
+      expect(output.reason).not.toContain("/lockbox:escape");
+      expect(output.reason).not.toContain("lockbox:delegate");
+      expect(output.reason).toContain("delegation is disabled");
+    });
+
+    it("records blocked tool in state during dangerous mode block", () => {
+      lockSession("danger-state");
+      main(hookInput("Bash", { command: "git push origin main" }, "danger-state", "bypassPermissions"), tmpDir);
+      const state = loadState("danger-state", tmpDir);
+      expect(state.blocked_tools).toContain("Bash: git push origin main");
+    });
+
+    it("records delegate Task in blocked_tools during dangerous mode block", () => {
+      lockSession("danger-del-state");
+      main(hookInput("Task", { subagent_type: "lockbox:delegate", prompt: "push" }, "danger-del-state", "bypassPermissions"), tmpDir);
+      const state = loadState("danger-del-state", tmpDir);
+      expect(state.blocked_tools).toContain("Task");
+    });
+
+    it("full flow: unsafe locks, then acting blocked in dangerous mode", () => {
+      // Step 1: unsafe tool locks the session
+      main(hookInput("mcp__perplexity__perplexity_ask", {}, "danger-flow", "bypassPermissions"), tmpDir);
+      expect(stdoutData).toBe("");
+      const state1 = loadState("danger-flow", tmpDir);
+      expect(state1.locked).toBe(true);
+
+      // Step 2: acting tool is blocked with dangerous mode message
+      stdoutData = "";
+      main(hookInput("Bash", { command: "git push" }, "danger-flow", "bypassPermissions"), tmpDir);
+      const output = JSON.parse(stdoutData);
+      expect(output.decision).toBe("block");
+      expect(output.reason).toContain("DANGEROUS MODE DETECTED");
+    });
+
+    it("full flow: unsafe locks, then delegate blocked in dangerous mode", () => {
+      // Step 1: unsafe tool locks the session
+      main(hookInput("WebFetch", { url: "https://example.com" }, "danger-flow2", "bypassPermissions"), tmpDir);
+      expect(stdoutData).toBe("");
+      const state1 = loadState("danger-flow2", tmpDir);
+      expect(state1.locked).toBe(true);
+
+      // Step 2: delegate Task is blocked
+      stdoutData = "";
+      main(hookInput("Task", { subagent_type: "lockbox:delegate", prompt: "push" }, "danger-flow2", "bypassPermissions"), tmpDir);
+      const output = JSON.parse(stdoutData);
+      expect(output.decision).toBe("block");
+      expect(output.reason).toContain("DANGEROUS MODE DETECTED");
+      expect(output.reason).toContain("auto-approve");
+
+      // Step 3: delegate does NOT start
+      expect(isDelegateActive("danger-flow2", tmpDir)).toBe(false);
+    });
+
+    it("does not start delegate when blocked in dangerous mode", () => {
+      lockSession("danger-no-del");
+      main(hookInput("Task", { subagent_type: "lockbox:delegate", prompt: "push" }, "danger-no-del", "bypassPermissions"), tmpDir);
+      expect(isDelegateActive("danger-no-del", tmpDir)).toBe(false);
+    });
   });
 
   describe("delegate Task detection", () => {

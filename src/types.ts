@@ -19,6 +19,7 @@ export interface HookInput {
   tool_name: string;
   tool_input: Record<string, unknown>;
   reason?: string;
+  permission_mode?: string;
 }
 
 export interface HookOutput {

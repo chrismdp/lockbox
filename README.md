@@ -166,6 +166,7 @@ Claude Code session transcripts (`.jsonl` files under `~/.claude/`) may contain 
 
 ### 0.10.x — Dangerous mode detection and session taint
 
+- **0.10.1** — Include dangerous mode detection, session transcript taint classification, and install skill updates that were missing from the 0.10.0 release.
 - **0.10.0** — Detect dangerous mode (bypassPermissions) at runtime: block actions with a specific message and disable delegation since it would auto-approve without user review. Classify reading Claude Code session transcripts (.jsonl under .claude/) as unsafe to prevent taint reintroduction via plan mode and sub-agents. Move git reset from acting to safe. Install skill now warns about skipDangerousModePermissionPrompt.
 
 ### 0.9.x — Simplification

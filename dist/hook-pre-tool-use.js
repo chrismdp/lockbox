@@ -10,6 +10,31 @@ function lockSession(state, toolName, toolInput, sessionId, tmpDir) {
     state.blocked_tools = [];
     saveState(sessionId, state, tmpDir);
 }
+function blockDangerousMode(state, toolName, toolInput, sessionId, tmpDir) {
+    const desc = toolDescription(toolName, toolInput);
+    if (!state.blocked_tools.includes(desc)) {
+        state.blocked_tools.push(desc);
+        saveState(sessionId, state, tmpDir);
+    }
+    const reason = "LOCKBOX: Action blocked — session contains untrusted data.\n" +
+        "\n" +
+        "⚠ DANGEROUS MODE DETECTED — lockbox quarantine cannot be enforced.\n" +
+        "In dangerous mode, delegate approval is auto-granted without user review,\n" +
+        "so the quarantine escape hatch is broken. Lockbox will block actions but\n" +
+        "delegation is disabled.\n" +
+        "\n" +
+        `Locked by: ${state.locked_by} at ${state.locked_at}\n` +
+        `Blocked: ${desc}\n` +
+        "\n" +
+        "STOP. Tell the user:\n" +
+        "  1. Lockbox cannot protect this session in dangerous mode\n" +
+        "  2. Switch to a safer permission mode (e.g. acceptEdits) to re-enable quarantine\n" +
+        "  3. Or start a new session in a safer mode\n" +
+        "\n" +
+        "Do NOT attempt delegation — it will auto-approve without user review.";
+    const output = { decision: "block", reason };
+    process.stdout.write(JSON.stringify(output));
+}
 function blockTool(state, toolName, toolInput, sessionId, tmpDir) {
     const desc = toolDescription(toolName, toolInput);
     if (!state.blocked_tools.includes(desc)) {
@@ -54,12 +79,18 @@ export function main(stdinData, tmpDir) {
     const sessionId = hookInput.session_id ?? "unknown";
     const toolName = hookInput.tool_name ?? "";
     const toolInput = hookInput.tool_input ?? {};
+    const isDangerousMode = hookInput.permission_mode === "bypassPermissions";
     // Fallback delegate detection: if SubagentStart hooks don't fire,
     // catch delegate Task calls here and prepare clean state.
     // Accept both plugin-local "delegate" and namespaced "lockbox:delegate".
     const subType = String(toolInput.subagent_type ?? "");
     if (toolName === "Task" && (subType === "delegate" || subType === "lockbox:delegate")) {
         const preState = loadState(sessionId, tmpDir);
+        if (preState.locked && isDangerousMode) {
+            // Dangerous mode auto-approves Task — delegation is unsafe
+            blockDangerousMode(preState, toolName, toolInput, sessionId, tmpDir);
+            return;
+        }
         if (preState.locked) {
             startDelegate(sessionId, tmpDir); // idempotent via marker
         }
@@ -89,7 +120,12 @@ export function main(stdinData, tmpDir) {
     }
     // Acting (or unsafe_acting when already locked): block if locked
     if (isLocked) {
-        blockTool(state, toolName, toolInput, sessionId, tmpDir);
+        if (isDangerousMode) {
+            blockDangerousMode(state, toolName, toolInput, sessionId, tmpDir);
+        }
+        else {
+            blockTool(state, toolName, toolInput, sessionId, tmpDir);
+        }
         return;
     }
     // Acting but session not locked → passthrough

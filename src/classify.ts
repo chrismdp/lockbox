@@ -10,6 +10,21 @@ function isLockboxFile(toolInput: Record<string, unknown>): boolean {
   return /lockbox\.json/.test(filePath) || /lockbox-state/.test(filePath);
 }
 
+/**
+ * Claude Code session transcripts (.jsonl files under .claude/) may contain
+ * tainted data from previous sessions. Reading them reintroduces that data
+ * into the current context — same risk as fetching an untrusted web page.
+ * Plan mode and sub-agents can read these files, so this must be enforced.
+ */
+function isClaudeSessionFile(toolInput: Record<string, unknown>): boolean {
+  const filePath = (toolInput.file_path as string) ?? (toolInput.path as string) ?? "";
+  // Direct read of a transcript file
+  if (/\.claude\/.*\.jsonl/.test(filePath)) return true;
+  // Grep/Glob searching session transcript directories
+  if (/\.claude\/projects\//.test(filePath)) return true;
+  return false;
+}
+
 export function classifyTool(
   toolName: string,
   toolInput: Record<string, unknown>,
@@ -18,6 +33,12 @@ export function classifyTool(
   // Tamper resistance: protect lockbox config/state from tainted sessions
   if ((toolName === "Edit" || toolName === "Write") && isLockboxFile(toolInput)) {
     return "acting";
+  }
+
+  // Session transcript taint: reading old Claude Code sessions reintroduces
+  // potentially tainted data. Classify as unsafe so the session locks.
+  if ((toolName === "Read" || toolName === "Grep" || toolName === "Glob") && isClaudeSessionFile(toolInput)) {
+    return "unsafe";
   }
 
   const tools = config.tools;

@@ -23,8 +23,11 @@ One specific command MUST require user approval (not auto-allowed) for lockbox t
    - `Task(lockbox:delegate)` in `deny` — this blocks delegation entirely. It must be in `ask` instead so the user gets prompted.
 4. Check `permissions.ask` for required entries:
    - `Task(lockbox:delegate)` MUST be in `ask` — without it, default permission modes like `acceptEdits` may auto-approve the delegate without user review. Do NOT use broad `Task` in `ask` — that prompts for every sub-agent (Explore, Plan, etc.) which is noisy and unnecessary
-5. Report findings to the user
-6. If issues found, suggest specific fixes and offer to apply them
+5. Check `skipDangerousModePermissionPrompt`:
+   - If `true`, warn the user: dangerous mode auto-approves ALL tool calls including `ask` entries. This means `Task(lockbox:delegate)` would execute without user review, bypassing lockbox's quarantine. The setting also removes the "are you sure?" confirmation before entering dangerous mode, making it easy to end up there accidentally.
+   - Recommend setting `skipDangerousModePermissionPrompt` to `false` (or removing it) so the user gets a confirmation gate before entering a mode that disables lockbox's protections.
+6. Report findings to the user
+7. If issues found, suggest specific fixes and offer to apply them
 
 ## Fix strategy
 
@@ -36,6 +39,9 @@ The delegate sub-agent would auto-execute without user review. Options:
 
 **If `Task(lockbox:delegate)` is not in `ask`:**
 This is the most common oversight. Default permission modes like `acceptEdits` may auto-approve the delegate without prompting the user. Add `Task(lockbox:delegate)` to `permissions.ask` so the delegate always requires explicit approval.
+
+**If `skipDangerousModePermissionPrompt` is `true`:**
+Dangerous mode auto-approves all tool calls — `ask` entries are ignored, so `Task(lockbox:delegate)` executes without review. The setting also removes the confirmation prompt before entering dangerous mode, making it easy to switch accidentally. Recommend removing or setting to `false`. This doesn't prevent using dangerous mode — it just restores the "are you sure?" gate so the user consciously opts into bypassing lockbox.
 
 ## Applying changes
 

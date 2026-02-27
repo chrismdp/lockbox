@@ -46,5 +46,8 @@ export function checkPermissions(settingsPath) {
     else if (!delegateAllowed && !delegateInAsk) {
         warnings.push("Task(lockbox:delegate) not in ask — delegate may auto-approve depending on permission mode. Add Task(lockbox:delegate) to permissions.ask");
     }
+    if (settings.skipDangerousModePermissionPrompt === true) {
+        warnings.push("skipDangerousModePermissionPrompt is enabled — dangerous mode bypasses all permission prompts including delegate review. Lockbox will block actions but delegation is disabled in dangerous mode. Consider removing this setting.");
+    }
     return warnings;
 }
