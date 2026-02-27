@@ -53,11 +53,5 @@ export function checkPermissions(settingsPath?: string): string[] {
     );
   }
 
-  if (settings.skipDangerousModePermissionPrompt === true) {
-    warnings.push(
-      "skipDangerousModePermissionPrompt is enabled — dangerous mode bypasses all permission prompts including delegate review. Lockbox will block actions but delegation is disabled in dangerous mode. Consider removing this setting.",
-    );
-  }
-
   return warnings;
 }

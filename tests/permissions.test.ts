@@ -122,46 +122,6 @@ describe("checkPermissions", () => {
     expect(warnings).toHaveLength(0);
   });
 
-  it("warns when skipDangerousModePermissionPrompt is true", () => {
-    const p = writeSettings({
-      permissions: {
-        allow: ["Read(/home/**)"],
-        ask: ["Task(lockbox:delegate)"],
-        defaultMode: "acceptEdits",
-      },
-      skipDangerousModePermissionPrompt: true,
-    });
-    const warnings = checkPermissions(p);
-    expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toContain("skipDangerousModePermissionPrompt");
-    expect(warnings[0]).toContain("dangerous mode");
-  });
-
-  it("no warning when skipDangerousModePermissionPrompt is false", () => {
-    const p = writeSettings({
-      permissions: {
-        allow: ["Read(/home/**)"],
-        ask: ["Task(lockbox:delegate)"],
-        defaultMode: "acceptEdits",
-      },
-      skipDangerousModePermissionPrompt: false,
-    });
-    const warnings = checkPermissions(p);
-    expect(warnings).toHaveLength(0);
-  });
-
-  it("no warning when skipDangerousModePermissionPrompt is absent", () => {
-    const p = writeSettings({
-      permissions: {
-        allow: ["Read(/home/**)"],
-        ask: ["Task(lockbox:delegate)"],
-        defaultMode: "acceptEdits",
-      },
-    });
-    const warnings = checkPermissions(p);
-    expect(warnings).toHaveLength(0);
-  });
-
   it("no warnings when no permissions key", () => {
     const p = writeSettings({ model: "opus" });
     const warnings = checkPermissions(p);
