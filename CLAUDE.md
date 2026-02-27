@@ -12,8 +12,8 @@ npm test         # vitest run
 ## Releasing
 
 After pushing, always ask: patch, minor, or major?
-- **Patch** (0.10.2 → 0.10.3): Bug fixes, config pattern additions
-- **Minor** (0.10.3 → 0.11.0): New features, hook changes, new classification categories
+- **Patch** (0.10.3 → 0.10.4, or 0.10.9 → 0.10.10): Bug fixes, config pattern additions
+- **Minor** (0.10.x → 0.11.0): New features, hook changes, new classification categories
 - **Major** (0.x → 1.0): Breaking config format changes
 
 Patch numbers are not limited to single digits — 0.10.9 → 0.10.10 is valid. Only bump the minor version for genuinely new features.
