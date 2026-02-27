@@ -166,6 +166,7 @@ Claude Code session transcripts (`.jsonl` files under `~/.claude/`) may contain 
 
 ### 0.10.x — Dangerous mode detection and session taint
 
+- **0.10.3** — Install skill now checks plugin cache for rogue `settings.local.json` files that silently auto-approve delegate sub-agents. Also checks project-level settings. Removed dev-only `settings.local.json` from repo.
 - **0.10.2** — Remove `skipDangerousModePermissionPrompt` check from install skill and permissions checker. Lockbox already blocks actions and disables delegation at runtime when dangerous mode is detected, making the settings-level check redundant.
 - **0.10.1** — Include dangerous mode detection, session transcript taint classification, and install skill updates that were missing from the 0.10.0 release.
 - **0.10.0** — Detect dangerous mode (bypassPermissions) at runtime: block actions with a specific message and disable delegation since it would auto-approve without user review. Classify reading Claude Code session transcripts (.jsonl under .claude/) as unsafe to prevent taint reintroduction via plan mode and sub-agents. Move git reset from acting to safe. Install skill now warns about skipDangerousModePermissionPrompt.
