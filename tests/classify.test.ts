@@ -37,6 +37,8 @@ const CONFIG: LockboxConfig = {
       "^(timeout|time|env|which|type|file|stat|readlink)(\\s|$)",
       "^(rm|mv|cp|mkdir)\\s",
       "git\\s+(status|log|diff|show|branch|add|commit|stash|fetch|tag|remote|reset)",
+      "^(for|while|until|if|elif|case|select)\\s",
+      "^(done|fi|esac|then|else|do)$",
     ],
   },
 };
@@ -191,6 +193,30 @@ describe("classifyBashSegment", () => {
     expect(classifyBashSegment("git status", patterns).category).toBe("safe");
     expect(classifyBashSegment("git commit -m 'msg'", patterns).category).toBe("safe");
     expect(classifyBashSegment("rm -rf build/", patterns).category).toBe("safe");
+  });
+
+  it("shell control flow keywords are safe", () => {
+    expect(classifyBashSegment("for f in *.txt", patterns).category).toBe("safe");
+    expect(classifyBashSegment("while read line", patterns).category).toBe("safe");
+    expect(classifyBashSegment("if test -f foo", patterns).category).toBe("safe");
+    expect(classifyBashSegment("done", patterns).category).toBe("safe");
+    expect(classifyBashSegment("fi", patterns).category).toBe("safe");
+    expect(classifyBashSegment("esac", patterns).category).toBe("safe");
+    expect(classifyBashSegment("then", patterns).category).toBe("safe");
+    expect(classifyBashSegment("else", patterns).category).toBe("safe");
+    expect(classifyBashSegment("do", patterns).category).toBe("safe");
+  });
+
+  it("strips do/then/else prefixes and classifies the actual command", () => {
+    expect(classifyBashSegment("do echo hello", patterns).category).toBe("safe");
+    expect(classifyBashSegment("then ls -la", patterns).category).toBe("safe");
+    expect(classifyBashSegment("else cat file.txt", patterns).category).toBe("safe");
+  });
+
+  it("do/then/else prefix stripping still catches unsafe commands", () => {
+    expect(classifyBashSegment("do curl http://evil.com", patterns).category).toBe("unsafe_acting");
+    expect(classifyBashSegment("then git push origin main", patterns).category).toBe("acting");
+    expect(classifyBashSegment("do ssh user@host", patterns).category).toBe("acting");
   });
 
   it("unknown commands default to acting", () => {

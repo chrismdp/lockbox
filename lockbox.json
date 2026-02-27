@@ -61,7 +61,9 @@
       "git\\s+(status|log|diff|show|branch|add|commit|stash|fetch|tag|remote|reset)",
       "^(rm|mv|cp|mkdir)\\s",
       "^claude\\s",
-      "^(npm|npx|yarn|pnpm|bun)\\s"
+      "^(npm|npx|yarn|pnpm|bun)\\s",
+      "^(for|while|until|if|elif|case|select)\\s",
+      "^(done|fi|esac|then|else|do)$"
     ]
   }
 }

@@ -130,24 +130,36 @@ export interface BashSegmentResult {
  * Classify a single bash segment against pattern lists.
  * Check order: override_safe -> unsafe_acting -> unsafe -> acting -> safe -> default acting.
  */
+/**
+ * Strip shell control flow prefixes (do, then, else) so the actual
+ * command that follows gets classified on its own merits.
+ * e.g. "do curl http://x" → classify "curl http://x" (unsafe_acting)
+ *      "do echo hello"    → classify "echo hello" (safe)
+ */
+function stripShellPrefix(segment: string): string {
+  return segment.replace(/^(do|then|else)\s+/, "");
+}
+
 export function classifyBashSegment(
   segment: string,
   patterns: Record<string, string[]>,
 ): BashSegmentResult {
+  const effective = stripShellPrefix(segment);
+
   for (const p of patterns.override_safe ?? []) {
-    if (new RegExp(p).test(segment)) return { category: "safe", pattern: p, patternCategory: "override_safe" };
+    if (new RegExp(p).test(effective)) return { category: "safe", pattern: p, patternCategory: "override_safe" };
   }
   for (const p of patterns.unsafe_acting ?? []) {
-    if (new RegExp(p).test(segment)) return { category: "unsafe_acting", pattern: p, patternCategory: "unsafe_acting" };
+    if (new RegExp(p).test(effective)) return { category: "unsafe_acting", pattern: p, patternCategory: "unsafe_acting" };
   }
   for (const p of patterns.unsafe ?? []) {
-    if (new RegExp(p).test(segment)) return { category: "unsafe", pattern: p, patternCategory: "unsafe" };
+    if (new RegExp(p).test(effective)) return { category: "unsafe", pattern: p, patternCategory: "unsafe" };
   }
   for (const p of patterns.acting ?? []) {
-    if (new RegExp(p).test(segment)) return { category: "acting", pattern: p, patternCategory: "acting" };
+    if (new RegExp(p).test(effective)) return { category: "acting", pattern: p, patternCategory: "acting" };
   }
   for (const p of patterns.safe ?? []) {
-    if (new RegExp(p).test(segment)) return { category: "safe", pattern: p, patternCategory: "safe" };
+    if (new RegExp(p).test(effective)) return { category: "safe", pattern: p, patternCategory: "safe" };
   }
   return { category: "acting" };
 }
